@@ -3,14 +3,14 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("classGameEditor", {
-    loadData: () => ipcRenderer.invoke("editor:load-data"),
-    saveData: data => ipcRenderer.invoke("editor:save-data", data),
-    chooseImage: meta => ipcRenderer.invoke("editor:choose-image", meta),
-    openGame: () => ipcRenderer.invoke("editor:open-game"),
-    setDirty: value => ipcRenderer.send("editor:set-dirty", Boolean(value)),
+    loadData: () => ipcRenderer.invoke("load-data"),
+    saveData: data => ipcRenderer.invoke("save-data", data),
+    chooseImage: meta => ipcRenderer.invoke("choose-image", meta),
+    openGame: () => ipcRenderer.invoke("open-game"),
+    setDirty: value => ipcRenderer.send("editor-dirty", Boolean(value)),
     onSaveBeforeClose: callback => {
-        ipcRenderer.removeAllListeners("editor:save-before-close");
-        ipcRenderer.on("editor:save-before-close", () => callback());
+        ipcRenderer.removeAllListeners("save-before-close");
+        ipcRenderer.on("save-before-close", () => callback());
     },
-    closeAfterSave: success => ipcRenderer.invoke("editor:close-after-save", Boolean(success))
+    closeAfterSave: success => ipcRenderer.send("close-after-save", Boolean(success))
 });

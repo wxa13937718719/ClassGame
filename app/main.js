@@ -13,7 +13,9 @@ let server = null;
 let mainWindow = null;
 let gamePreviewWindow = null;
 let baseUrl = "";
-let contentRoot = "";
+let uiRoot = "";
+let subjectRoot = "";
+let subjectConfig = null;
 let logFile = "";
 let currentPort = 0;
 let editorDirty = false;
@@ -22,7 +24,6 @@ let editorSavePending = false;
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 app.commandLine.appendSwitch("disable-features", "AutoplayIgnoreWebAudio");
-app.setAppUserModelId(editorMode ? "OpenAI.ClassGame.Editor" : "OpenAI.ClassGame.Classroom");
 
 function portableRoot() {
     return process.defaultApp ? __dirname : path.dirname(process.execPath);
@@ -37,9 +38,54 @@ function configurePortableStorageEarly() {
 }
 configurePortableStorageEarly();
 
-function findContentRoot() {
+function findUiRoot() {
     const candidates = [path.join(portableRoot(), "content"), path.join(__dirname, "content")];
     return candidates.find(candidate => fs.existsSync(candidate)) || candidates[0];
+}
+
+function findSubjectsRoot() {
+    const candidates = [path.join(portableRoot(), "subjects"), path.join(__dirname, "subjects")];
+    return candidates.find(candidate => fs.existsSync(candidate)) || candidates[0];
+}
+
+function parseSubjectArg(argv = process.argv) {
+    const args = Array.isArray(argv) ? argv : [];
+    for (let index = 0; index < args.length; index += 1) {
+        const value = String(args[index] || "");
+        if (value.startsWith("--subject=")) return value.slice("--subject=".length);
+        if (value === "--subject") return String(args[index + 1] || "");
+    }
+    return "";
+}
+
+function readDefaultSubject() {
+    const filename = path.join(portableRoot(), "default-subject.json");
+    if (!fs.existsSync(filename)) return "";
+    const value = readJson(filename);
+    return typeof value.subjectId === "string" ? value.subjectId : "";
+}
+
+function resolveSubjectId(argv = process.argv) {
+    const explicit = parseSubjectArg(argv);
+    if (explicit) return explicit;
+    return readDefaultSubject() || "chemistry";
+}
+
+function loadSubjectConfig(subjectId) {
+    if (!/^[A-Za-z0-9_-]+$/.test(subjectId || "")) throw new Error(`科目编号不合法：${subjectId}`);
+    const root = findSubjectsRoot();
+    const configPath = path.join(root, subjectId, "subject.json");
+    if (!fs.existsSync(configPath)) throw new Error(`未找到科目配置：${subjectId}`);
+    const config = readJson(configPath);
+    if (config.id !== subjectId) throw new Error(`科目配置 id 与目录不一致：${subjectId}`);
+    const requiredLabels = ["splashTitle", "enterButton", "homeTitle", "homeDescription", "chapterSectionTitle", "practiceSectionTitle", "chapterMode", "wrongBookTitle", "favoritesTitle"];
+    const missing = requiredLabels.filter(key => !String(config.labels?.[key] || "").trim());
+    if (missing.length) throw new Error(`科目配置缺少标签：${missing.join(", ")}`);
+    const assetValues = [config.assets?.background, config.assets?.icon, ...Object.values(config.assets?.audio || {})];
+    if (assetValues.some(value => typeof value !== "string" || !value || value.startsWith("/") || value.split("/").includes(".."))) {
+        throw new Error(`科目配置包含非法资源路径：${subjectId}`);
+    }
+    return config;
 }
 
 function backupsRoot() {
@@ -60,15 +106,18 @@ function writeJson(filename, value) {
     fs.writeFileSync(filename, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-function safeContentPath(relative) {
-    const root = path.resolve(contentRoot);
+function safeRootPath(rootPath, relative) {
+    const root = path.resolve(rootPath);
     const target = path.resolve(root, String(relative || ""));
     if (target === root || target.startsWith(`${root}${path.sep}`)) return target;
     throw new Error(`非法文件路径：${relative}`);
 }
 
+function safeUiPath(relative) { return safeRootPath(uiRoot, relative); }
+function safeSubjectPath(relative) { return safeRootPath(subjectRoot, relative); }
+
 function manifestPath() {
-    return path.join(contentRoot, "data", "manifest.json");
+    return path.join(subjectRoot, "data", "manifest.json");
 }
 
 function loadAllQuestionData() {
@@ -78,7 +127,7 @@ function loadAllQuestionData() {
     const chapters = {};
     for (const item of manifest.chapters) {
         const relative = item.file || `data/chapters/${item.id}/chapter.json`;
-        const filename = safeContentPath(relative);
+        const filename = safeSubjectPath(relative);
         if (!fs.existsSync(filename)) throw new Error(`章节文件不存在：${relative}`);
         chapters[item.id] = readJson(filename);
     }
@@ -145,7 +194,7 @@ function validateQuestionData(payload) {
             const images = [question.image, ...choiceImages].filter(Boolean);
             images.forEach(image => {
                 try {
-                    const imageFile = safeContentPath(image);
+                    const imageFile = safeSubjectPath(image);
                     if (!fs.existsSync(imageFile)) errors.push(`${qp} 图片不存在：${image}`);
                 } catch (error) {
                     errors.push(`${qp} 图片路径非法：${image}`);
@@ -160,11 +209,14 @@ function verifyContent() {
     const required = [
         "index.html", "game.html", "data/manifest.json", "js/data-loader.js",
         "js/app.js", "js/game.js", "js/storage.js", "js/audio.js", "js/effects.js", "js/validator.js",
-        "static/audio/bgm.mp3", "static/audio/correct.mp3", "static/audio/wrong.mp3", "static/audio/hover.mp3",
-        "static/images/common/bg.jpg"
+        "js/config.js"
     ];
     if (editorMode) required.push("editor.html", "editor/editor.js", "editor/editor.css");
-    const missing = required.filter(relative => !fs.existsSync(path.join(contentRoot, relative)));
+    const missing = required.filter(relative => !fs.existsSync(safeUiPath(relative)));
+    const subjectRequired = ["subject.json", "data/manifest.json", subjectConfig.assets.background, subjectConfig.assets.icon,
+        ...Object.values(subjectConfig.assets.audio || {})];
+    const missingSubject = subjectRequired.filter(relative => !fs.existsSync(safeSubjectPath(relative)));
+    if (missingSubject.length) throw new Error(`科目内容不完整，缺少：\n${missingSubject.join("\n")}`);
     if (missing.length) throw new Error(`程序内容不完整，缺少：\n${missing.join("\n")}`);
 
     const payload = loadAllQuestionData();
@@ -175,7 +227,7 @@ function verifyContent() {
 }
 
 function backupCurrentData() {
-    const sourceData = path.join(contentRoot, "data");
+    const sourceData = path.join(subjectRoot, "data");
     if (!fs.existsSync(sourceData)) return "";
     const root = backupsRoot();
     fs.mkdirSync(root, { recursive: true });
@@ -204,13 +256,13 @@ function saveAllQuestionData(payload) {
         item.file = `data/chapters/${item.id}/chapter.json`;
         const chapter = payload.chapters[item.id];
         chapter.id = item.id;
-        writeJson(path.join(contentRoot, item.file), chapter);
+        writeJson(path.join(subjectRoot, item.file), chapter);
     });
     writeJson(manifestPath(), payload.manifest);
 
     old.manifest.chapters.forEach(item => {
         if (newIds.has(item.id)) return;
-        const folder = path.join(contentRoot, "data", "chapters", item.id);
+        const folder = path.join(subjectRoot, "data", "chapters", item.id);
         if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true });
     });
 
@@ -232,8 +284,13 @@ function mimeType(filename) {
 function resolveRequestPath(requestPath) {
     let decoded;
     try { decoded = decodeURIComponent(requestPath); } catch (_) { return null; }
-    const relative = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
-    try { return safeContentPath(relative); } catch (_) { return null; }
+    const pathname = decoded === "/" ? "/index.html" : decoded;
+    try {
+        if (pathname === "/subject.json") return safeSubjectPath("subject.json");
+        if (pathname.startsWith("/data/")) return safeSubjectPath(pathname.slice("/".length));
+        if (pathname.startsWith("/static/")) return safeSubjectPath(pathname.slice("/".length));
+        return safeUiPath(pathname.replace(/^\/+/, ""));
+    } catch (_) { return null; }
 }
 
 function sendWholeFile(req, res, filePath, stat) {
@@ -304,10 +361,10 @@ function hardenWindow(win) {
 }
 
 function createGameWindow(port, preview = false) {
-    const iconPath = path.join(contentRoot, "static", "images", "common", "app_icon.ico");
+    const iconPath = safeSubjectPath(subjectConfig.assets.icon);
     const options = {
         width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, autoHideMenuBar: true,
-        backgroundColor: "#071a2d", title: preview ? "趣味化学闯关 - 编辑器预览" : "趣味化学闯关",
+        backgroundColor: "#071a2d", title: preview ? `${subjectConfig.app.gameTitle} - 编辑器预览` : subjectConfig.app.gameTitle,
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, devTools: false, backgroundThrottling: false }
     };
     if (fs.existsSync(iconPath)) options.icon = iconPath;
@@ -324,7 +381,7 @@ function createEditorWindow(port) {
     editorSavePending = false;
     const win = new BrowserWindow({
         width: 1500, height: 900, minWidth: 1100, minHeight: 680, show: false, autoHideMenuBar: true,
-        backgroundColor: "#f4f6f8", title: "ClassGame 题库编辑器",
+        backgroundColor: "#f4f6f8", title: subjectConfig.app.editorTitle,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"), nodeIntegration: false, contextIsolation: true,
             sandbox: false, webSecurity: true, devTools: false, backgroundThrottling: false
@@ -348,7 +405,7 @@ function createEditorWindow(port) {
         if (choice === 0) {
             if (!editorSavePending) {
                 editorSavePending = true;
-                win.webContents.send("editor:save-before-close");
+                win.webContents.send("save-before-close");
             }
         } else if (choice === 1) {
             editorDirty = false;
@@ -361,9 +418,9 @@ function createEditorWindow(port) {
 }
 
 function registerEditorIpc() {
-    ipcMain.handle("editor:load-data", () => loadAllQuestionData());
-    ipcMain.handle("editor:save-data", (_event, payload) => saveAllQuestionData(payload));
-    ipcMain.handle("editor:choose-image", async (_event, meta) => {
+    ipcMain.handle("load-data", () => loadAllQuestionData());
+    ipcMain.handle("save-data", (_event, payload) => saveAllQuestionData(payload));
+    ipcMain.handle("choose-image", async (_event, meta) => {
         const result = await dialog.showOpenDialog(mainWindow, {
             title: "选择题目图片", properties: ["openFile"],
             filters: [{ name: "图片文件", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }]
@@ -377,13 +434,13 @@ function registerEditorIpc() {
         const suffix = meta?.kind === "option" ? `option_${safe(meta.optionId)}` : "question";
         const name = `${questionId}_${suffix}_${Date.now()}${ext}`;
         const relative = `data/chapters/${chapterId}/images/${name}`;
-        const destination = safeContentPath(relative);
+        const destination = safeSubjectPath(relative);
         fs.mkdirSync(path.dirname(destination), { recursive: true });
         fs.copyFileSync(source, destination);
         log(`复制题目图片：${source} -> ${relative}`);
         return { path: relative, filename: name };
     });
-    ipcMain.handle("editor:open-game", () => {
+    ipcMain.handle("open-game", () => {
         if (gamePreviewWindow && !gamePreviewWindow.isDestroyed()) {
             gamePreviewWindow.show(); gamePreviewWindow.focus(); return true;
         }
@@ -391,17 +448,16 @@ function registerEditorIpc() {
         gamePreviewWindow.on("closed", () => { gamePreviewWindow = null; });
         return true;
     });
-    ipcMain.on("editor:set-dirty", (_event, value) => {
+    ipcMain.on("editor-dirty", (_event, value) => {
         editorDirty = Boolean(value);
     });
-    ipcMain.handle("editor:close-after-save", (_event, success) => {
+    ipcMain.on("close-after-save", (_event, success) => {
         editorSavePending = false;
         if (success && mainWindow && !mainWindow.isDestroyed()) {
             editorDirty = false;
             editorForceClose = true;
             setImmediate(() => mainWindow.close());
         }
-        return true;
     });
 }
 
@@ -419,8 +475,12 @@ if (!gotLock) {
     app.whenReady().then(async () => {
         try {
             Menu.setApplicationMenu(null);
-            contentRoot = findContentRoot();
-            log(`启动 ${editorMode ? "编辑器" : "游戏"}。exe=${process.execPath}; content=${contentRoot}`);
+            uiRoot = findUiRoot();
+            const subjectId = resolveSubjectId(process.argv);
+            subjectConfig = loadSubjectConfig(subjectId);
+            subjectRoot = path.join(findSubjectsRoot(), subjectId);
+            app.setAppUserModelId(subjectConfig.app.appUserModelId);
+            log(`启动 ${editorMode ? "编辑器" : "游戏"}。exe=${process.execPath}; ui=${uiRoot}; subject=${subjectId}`);
             verifyContent();
             const result = await startStaticServer();
             server = result.instance;
@@ -432,7 +492,7 @@ if (!gotLock) {
             mainWindow.on("closed", () => { mainWindow = null; });
         } catch (error) {
             log(`启动失败：${error.stack || error.message}`);
-            dialog.showErrorBox(editorMode ? "ClassGame 编辑器启动失败" : "趣味化学闯关启动失败", `${error.message}\n\n日志文件：${logFile}`);
+            dialog.showErrorBox(editorMode ? "ClassGame 编辑器启动失败" : "ClassGame 启动失败", `${error.message}\n\n日志文件：${logFile}`);
             app.quit();
         }
     });

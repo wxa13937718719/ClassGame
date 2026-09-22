@@ -24,6 +24,9 @@
     "autoRemoveOff": "错题答对自动移除：关",
     "resetButton": "🗑 清空记录",
     "gameFrameTitle": "语文答题篇章",
+    "backToMenu": "← 返回目录",
+    "resultTitle": "🎉 闯关完成！",
+    "retryButton": "再挑战一次",
     "editorDescription": "编辑章节、题目与答案，保存后即可在课堂模式中使用。"
   },
   "theme": {
