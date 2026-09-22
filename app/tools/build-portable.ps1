@@ -45,6 +45,7 @@ function Get-Subject([string]$Id) {
     if (-not $manifest.chapters) { throw "Subject manifest has no chapters" }
     foreach ($item in $manifest.chapters) {
         if ($item.id -notmatch '^[A-Za-z0-9_-]+$') { throw "Invalid chapter ID: $($item.id)" }
+        Assert-RelativePath $item.file "chapter file $($item.id)"
         $chapterPath = Join-Path $root $item.file
         if (-not (Test-Path $chapterPath)) { throw "Missing chapter file: $($item.file)" }
         $chapter = Read-Json $chapterPath

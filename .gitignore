@@ -1,0 +1,9 @@
+node_modules/
+release/
+_build_cache/*.zip
+_build_cache/*.part
+_build_cache/electron-runtime-*/
+userdata/
+editor_userdata/
+backups/
+*.log
