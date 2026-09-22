@@ -1,0 +1,8 @@
+{
+  "name": "classgame",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Configurable offline classroom quiz platform and teacher editor",
+  "main": "main.js",
+  "productName": "ClassGame"
+}

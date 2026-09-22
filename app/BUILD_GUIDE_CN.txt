@@ -1,0 +1,18 @@
+ClassGame 教师版 v1 - Windows 封装说明
+====================================
+
+1. 完整解压本文件夹。
+2. 双击 BUILD.cmd。
+3. 如果 _build_cache 中没有 Electron 运行库，脚本会联网下载一次。
+4. 成功后自动打开 release 文件夹。
+5. 最终文件夹：release\ClassGame_Teacher_Windows_x64\
+6. 最终压缩包：release\ClassGame_Teacher_Windows_x64.zip
+
+最终文件夹中：
+- ClassGame.exe：课堂游戏
+- ClassGameEditor.exe：老师题库编辑器
+- content\：游戏和题库数据
+- userdata\：游戏学习记录
+- backups\：编辑器自动题库备份
+
+两个 EXE 共用一套 Electron 运行环境。

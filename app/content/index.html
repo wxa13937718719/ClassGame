@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味化学闯关 - 游戏大厅</title>
+    <link rel="icon" href="static/images/common/app_icon.ico">
+    <style>
+        :root {
+            --blue: #00c6ff;
+            --deep-blue: #0072ff;
+            --ink: #19324a;
+            --glass: rgba(255, 255, 255, 0.88);
+        }
+
+        * { box-sizing: border-box; }
+        html { min-height: 100%; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 28px 18px 50px;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            color: white;
+            overflow-x: hidden;
+            background:
+                linear-gradient(135deg, rgba(10, 25, 47, 0.72), rgba(2, 12, 27, 0.56)),
+                url("static/images/common/bg.jpg") center / cover fixed;
+        }
+
+        button, a { font: inherit; }
+        button:focus-visible, a:focus-visible { outline: 3px solid #ffd43b; outline-offset: 4px; }
+
+        .bubbles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+        .bubble {
+            position: absolute;
+            bottom: -120px;
+            border-radius: 50%;
+            background: rgba(0, 198, 255, 0.13);
+            border: 1px solid rgba(0, 198, 255, 0.38);
+            box-shadow: 0 0 18px rgba(0, 198, 255, 0.22);
+            animation: floatUp linear infinite;
+        }
+        .bubble:nth-child(1) { left: 8%; width: 42px; height: 42px; animation-duration: 9s; }
+        .bubble:nth-child(2) { left: 28%; width: 76px; height: 76px; animation-duration: 13s; animation-delay: 1s; }
+        .bubble:nth-child(3) { left: 58%; width: 48px; height: 48px; animation-duration: 10s; animation-delay: 3s; }
+        .bubble:nth-child(4) { left: 78%; width: 92px; height: 92px; animation-duration: 15s; animation-delay: 2s; }
+        .bubble:nth-child(5) { left: 48%; width: 28px; height: 28px; animation-duration: 8s; animation-delay: 5s; }
+        @keyframes floatUp {
+            from { transform: translateY(0) scale(1); opacity: 0.9; }
+            to { transform: translateY(-125vh) scale(1.55); opacity: 0; }
+        }
+
+        .music-btn {
+            position: fixed;
+            top: 18px;
+            right: 24px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.65);
+            background: rgba(255,255,255,0.18);
+            color: white;
+            font-size: 23px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 16px rgba(0,198,255,0.35);
+        }
+        .music-btn:hover { transform: scale(1.08); }
+        .spinning { animation: spin 4s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .muted::after {
+            content: "";
+            position: absolute;
+            width: 38px;
+            height: 4px;
+            border-radius: 3px;
+            background: #ff5d5d;
+            transform: rotate(45deg);
+        }
+
+        .splash-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: opacity 0.45s ease;
+        }
+        .splash-title {
+            margin: 0 0 54px;
+            text-align: center;
+            font-size: clamp(40px, 7vw, 68px);
+            text-shadow: 0 5px 18px rgba(0, 210, 255, 0.68), 0 9px 24px rgba(0,0,0,0.55);
+            animation: floatTitle 3s ease-in-out infinite;
+        }
+        @keyframes floatTitle { 50% { transform: translateY(-14px); } }
+        .start-btn {
+            padding: 18px 48px;
+            border: 3px solid var(--blue);
+            border-radius: 40px;
+            background: rgba(0, 114, 255, 0.12);
+            color: white;
+            font-size: clamp(22px, 4vw, 30px);
+            font-weight: 800;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 22px rgba(0,198,255,0.62), inset 0 0 15px rgba(0,198,255,0.35);
+            animation: heartbeat 1.6s infinite;
+        }
+        .start-btn:hover { background: rgba(0,198,255,0.24); }
+        @keyframes heartbeat { 50% { transform: scale(1.055); } }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            width: min(1000px, 100%);
+            margin: 30px auto 0;
+            display: none;
+            flex-direction: column;
+            animation: popIn 0.65s cubic-bezier(.18,.88,.32,1.2);
+        }
+        @keyframes popIn { from { opacity: 0; transform: scale(.93) translateY(20px); } }
+
+        .menu-header { text-align: center; margin-bottom: 24px; }
+        .game-title {
+            margin: 0 0 8px;
+            font-size: clamp(34px, 5vw, 52px);
+            text-shadow: 0 4px 16px rgba(0,198,255,.55);
+        }
+        .menu-header p { margin: 0; color: rgba(255,255,255,.85); }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto 24px;
+        }
+        .tool-btn {
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 999px;
+            padding: 10px 17px;
+            background: rgba(9, 29, 56, .64);
+            color: white;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+        .tool-btn:hover { border-color: var(--blue); background: rgba(0,114,255,.45); }
+        .tool-btn.is-on { border-color: #48d17c; background: rgba(25, 135, 84, .76); }
+        .tool-btn.danger:hover { border-color: #ff6b6b; background: rgba(192,57,43,.58); }
+
+        .section-title {
+            margin: 18px 0 12px;
+            font-size: 22px;
+            text-shadow: 0 2px 8px rgba(0,0,0,.5);
+        }
+        .menu-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 18px;
+        }
+        .level-card {
+            position: relative;
+            min-height: 116px;
+            display: flex;
+            align-items: center;
+            padding: 20px 24px;
+            border: 2px solid rgba(255,255,255,.68);
+            border-bottom: 6px solid #b8c2cc;
+            border-radius: 20px;
+            background: var(--glass);
+            color: var(--ink);
+            text-decoration: none;
+            box-shadow: 0 11px 24px rgba(0,0,0,.24);
+            transition: transform .18s, box-shadow .18s, border-color .18s;
+            backdrop-filter: blur(12px);
+        }
+        .active-card:hover, .utility-card:hover {
+            transform: translateY(-5px) scale(1.015);
+            border-color: var(--blue);
+            border-bottom-color: var(--deep-blue);
+            box-shadow: 0 15px 30px rgba(0,198,255,.32);
+        }
+        .level-icon { flex: 0 0 auto; margin-right: 18px; font-size: 42px; }
+        .level-info { min-width: 0; padding-right: 34px; }
+        .level-info h3 { margin: 0 0 7px; font-size: 21px; }
+        .level-info p { margin: 0 0 7px; color: #506579; line-height: 1.45; }
+        .level-info small { color: #718096; }
+        .go-arrow { position: absolute; right: 20px; font-size: 26px; color: var(--deep-blue); }
+        .locked-card { opacity: .72; filter: grayscale(.76); cursor: not-allowed; }
+        .wrong-book-card { border-bottom-color: #ee5253; }
+        .favorite-card { border-bottom-color: #f3b700; }
+        .count-badge {
+            position: absolute;
+            right: 18px;
+            top: 18px;
+            min-width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: #1f6feb;
+            color: white;
+            font-weight: 800;
+        }
+
+        .message-box {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            z-index: 200;
+            transform: translateX(-50%);
+            max-width: min(520px, calc(100% - 32px));
+            padding: 13px 20px;
+            border-radius: 12px;
+            background: rgba(20,35,55,.95);
+            box-shadow: 0 8px 30px rgba(0,0,0,.35);
+        }
+        .message-box.success { border: 1px solid #2ecc71; }
+        .message-box.error { border: 1px solid #ff6b6b; }
+
+        .game-shell {
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            background: #061529;
+        }
+        .game-frame {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border: 0;
+            background: #061529;
+        }
+        body.game-open { overflow: hidden; }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 12px 40px; }
+            .music-btn { right: 14px; top: 14px; }
+            .level-card { min-height: 104px; padding: 17px; }
+            .level-icon { font-size: 34px; margin-right: 13px; }
+            .level-info h3 { font-size: 18px; }
+            .menu-list { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <audio id="bgm" loop preload="auto" src="static/audio/bgm.mp3"></audio>
+    <audio id="hover-sound" preload="auto" src="static/audio/hover.mp3"></audio>
+
+    <button class="music-btn" id="music-btn" type="button">🎵</button>
+
+    <div class="bubbles" aria-hidden="true">
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+        <div class="bubble"></div><div class="bubble"></div>
+    </div>
+
+    <section class="splash-screen" id="splash-screen">
+        <h1 class="splash-title">🧪 趣味化学大闯关</h1>
+        <button class="start-btn" id="enter-game-btn" type="button">点击进入系统</button>
+    </section>
+
+    <main class="container" id="main-menu">
+        <header class="menu-header">
+            <h1 class="game-title">化学闯关大厅</h1>
+            <p>选择关卡开始挑战，题目和选项每次都会随机排列</p>
+        </header>
+
+        <div class="toolbar">
+            <button class="tool-btn" id="export-btn" type="button">⬇ 导出学习记录</button>
+            <button class="tool-btn" id="import-btn" type="button">⬆ 导入学习记录</button>
+            <button class="tool-btn" id="auto-remove-btn" type="button" aria-pressed="true">错题答对自动移除：开</button>
+            <button class="tool-btn danger" id="reset-btn" type="button">🗑 清空记录</button>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+        </div>
+
+        <h2 class="section-title">关卡目录</h2>
+        <section class="menu-list" id="chapter-list"></section>
+
+        <h2 class="section-title">专项练习</h2>
+        <section class="menu-list" id="utility-list"></section>
+    </main>
+
+    <div class="message-box" id="message-box" hidden></div>
+
+    <!--
+        关卡在这个全屏框架中打开。父页面不会跳转，因此父页面中的 BGM 音频元素会一直存在，
+        从目录进入关卡、从关卡返回目录时不会重新开始播放。
+    -->
+    <section class="game-shell" id="game-shell" hidden>
+        <iframe class="game-frame" id="game-frame" title="化学答题关卡" src="about:blank"></iframe>
+    </section>
+
+    <script src="js/data-loader.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
