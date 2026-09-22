@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "chapters": [
+    {
+      "id": "chapter_001",
+      "order": 1,
+      "icon": "📘",
+      "title": "第一章",
+      "subtitle": "请编辑本章说明",
+      "enabled": false,
+      "file": "data/chapters/chapter_001/chapter.json"
+    }
+  ]
+}

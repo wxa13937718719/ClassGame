@@ -1,0 +1,68 @@
+{
+  "id": "02_classics",
+  "title": "古诗文积累",
+  "questions": [
+    {
+      "id": "classics_001",
+      "type": "single",
+      "text": "“树树皆秋色，山山唯落晖”的作者是（　）",
+      "options": [
+        {
+          "id": "a",
+          "content": "王绩"
+        },
+        {
+          "id": "b",
+          "content": "崔颢"
+        },
+        {
+          "id": "c",
+          "content": "王维"
+        },
+        {
+          "id": "d",
+          "content": "李白"
+        }
+      ],
+      "answerId": "a",
+      "explanation": "这两句出自王绩的《野望》。"
+    },
+    {
+      "id": "classics_002",
+      "type": "multiple",
+      "text": "下列诗句中，出自崔颢《黄鹤楼》的有（　）",
+      "options": [
+        {
+          "id": "a",
+          "content": "黄鹤一去不复返，白云千载空悠悠"
+        },
+        {
+          "id": "b",
+          "content": "大漠孤烟直，长河落日圆"
+        },
+        {
+          "id": "c",
+          "content": "晴川历历汉阳树，芳草萋萋鹦鹉洲"
+        },
+        {
+          "id": "d",
+          "content": "山随平野尽，江入大荒流"
+        }
+      ],
+      "answerIds": [
+        "a",
+        "c"
+      ],
+      "explanation": "A、C两项出自崔颢《黄鹤楼》；B出自王维《使至塞上》；D出自李白《渡荆门送别》。"
+    },
+    {
+      "id": "classics_003",
+      "type": "fill",
+      "text": "补写诗句：晴川历历汉阳树，芳草萋萋______洲。",
+      "answers": [
+        "鹦鹉"
+      ],
+      "explanation": "原句为“晴川历历汉阳树，芳草萋萋鹦鹉洲”。"
+    }
+  ]
+}

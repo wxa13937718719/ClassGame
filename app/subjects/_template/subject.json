@@ -1,0 +1,47 @@
+{
+  "id": "subject-id",
+  "locale": "zh-CN",
+  "name": "自定义科目",
+  "app": {
+    "productName": "ClassGame 自定义科目",
+    "gameTitle": "自定义科目闯关",
+    "editorTitle": "ClassGame 自定义科目题库编辑器",
+    "appUserModelId": "ClassGame.Template"
+  },
+  "labels": {
+    "splashTitle": "📘 自定义科目闯关",
+    "enterButton": "点击进入系统",
+    "homeTitle": "自定义科目学习大厅",
+    "homeDescription": "选择章节开始挑战，题目和选项每次都会随机排列",
+    "chapterSectionTitle": "章节目录",
+    "practiceSectionTitle": "专项练习",
+    "chapterMode": "章节闯关",
+    "wrongBookTitle": "我的错题本",
+    "favoritesTitle": "我的收藏夹",
+    "exportButton": "⬇ 导出学习记录",
+    "importButton": "⬆ 导入学习记录",
+    "autoRemoveOn": "错题答对自动移除：开",
+    "autoRemoveOff": "错题答对自动移除：关",
+    "resetButton": "🗑 清空记录",
+    "gameFrameTitle": "答题关卡",
+    "editorDescription": "编辑章节、题目与答案，保存后即可在课堂模式中使用。"
+  },
+  "theme": {
+    "primary": "#3B82F6",
+    "secondary": "#1D4ED8",
+    "ink": "#1F2937",
+    "surface": "#FFFFFF",
+    "accent": "#F59E0B"
+  },
+  "assets": {
+    "background": "static/images/common/bg.jpg",
+    "icon": "static/images/common/app_icon.ico",
+    "audio": {
+      "bgm": "static/audio/bgm.mp3",
+      "correct": "static/audio/correct.mp3",
+      "wrong": "static/audio/wrong.mp3",
+      "hover": "static/audio/hover.mp3"
+    }
+  },
+  "storageKey": "classgame:subject-id"
+}

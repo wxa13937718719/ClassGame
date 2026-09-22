@@ -1,0 +1,47 @@
+{
+  "id": "chinese",
+  "locale": "zh-CN",
+  "name": "语文",
+  "app": {
+    "productName": "ClassGame 语文",
+    "gameTitle": "语文素养大闯关",
+    "editorTitle": "ClassGame 语文题库编辑器",
+    "appUserModelId": "ClassGame.Chinese"
+  },
+  "labels": {
+    "splashTitle": "📖 语文素养大闯关",
+    "enterButton": "点击进入系统",
+    "homeTitle": "语文学习书苑",
+    "homeDescription": "选择篇章开始挑战，题目和选项每次都会随机排列",
+    "chapterSectionTitle": "关卡目录",
+    "practiceSectionTitle": "专项练习",
+    "chapterMode": "章节闯关",
+    "wrongBookTitle": "我的错题本",
+    "favoritesTitle": "我的收藏夹",
+    "exportButton": "⬇ 导出学习记录",
+    "importButton": "⬆ 导入学习记录",
+    "autoRemoveOn": "错题答对自动移除：开",
+    "autoRemoveOff": "错题答对自动移除：关",
+    "resetButton": "🗑 清空记录",
+    "gameFrameTitle": "语文答题篇章",
+    "editorDescription": "编辑章节、题目与答案，保存后即可在课堂模式中使用。"
+  },
+  "theme": {
+    "primary": "#B85C4B",
+    "secondary": "#7B2F2F",
+    "ink": "#3B2A25",
+    "surface": "#FFFaf2",
+    "accent": "#D8AD58"
+  },
+  "assets": {
+    "background": "static/images/common/bg.jpg",
+    "icon": "static/images/common/app_icon.ico",
+    "audio": {
+      "bgm": "static/audio/bgm.mp3",
+      "correct": "static/audio/correct.mp3",
+      "wrong": "static/audio/wrong.mp3",
+      "hover": "static/audio/hover.mp3"
+    }
+  },
+  "storageKey": "classgame:chinese"
+}

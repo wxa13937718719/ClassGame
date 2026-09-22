@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wxa13937718719/ClassGame/schema/subject.schema.json",
+  "title": "ClassGame subject configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "locale", "name", "app", "labels", "theme", "assets", "storageKey"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+    "locale": { "type": "string", "minLength": 2 },
+    "name": { "type": "string", "minLength": 1 },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productName", "gameTitle", "editorTitle", "appUserModelId"],
+      "properties": {
+        "productName": { "type": "string", "minLength": 1 },
+        "gameTitle": { "type": "string", "minLength": 1 },
+        "editorTitle": { "type": "string", "minLength": 1 },
+        "appUserModelId": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "required": ["splashTitle", "enterButton", "homeTitle", "homeDescription", "chapterSectionTitle", "practiceSectionTitle", "chapterMode", "wrongBookTitle", "favoritesTitle"]
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "secondary", "ink", "surface", "accent"],
+      "properties": {
+        "primary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "secondary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "ink": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surface": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["background", "icon", "audio"],
+      "properties": {
+        "background": { "$ref": "#/$defs/assetPath" },
+        "icon": { "$ref": "#/$defs/assetPath" },
+        "audio": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/assetPath" }
+        }
+      }
+    },
+    "storageKey": { "type": "string", "pattern": "^classgame:[A-Za-z0-9_-]+$" }
+  },
+  "$defs": {
+    "assetPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    }
+  }
+}
