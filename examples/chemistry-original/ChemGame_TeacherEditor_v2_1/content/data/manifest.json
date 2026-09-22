@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "chapters": [
+    {
+      "id": "01_intro",
+      "order": 1,
+      "icon": "🌟",
+      "title": "第一关：绪言",
+      "subtitle": "化学使世界变得更加绚丽多彩",
+      "enabled": true,
+      "file": "data/chapters/01_intro/chapter.json"
+    },
+    {
+      "id": "02_change",
+      "order": 2,
+      "icon": "⚗️",
+      "title": "第二关：物质的变化和性质",
+      "subtitle": "物理变化、化学变化与物质性质",
+      "enabled": true,
+      "file": "data/chapters/02_change/chapter.json"
+    },
+    {
+      "id": "03_properties",
+      "order": 3,
+      "icon": "🔒",
+      "title": "第三关：待配置",
+      "subtitle": "后续题目放在这里",
+      "enabled": false,
+      "file": "data/chapters/03_properties/chapter.json"
+    }
+  ]
+}

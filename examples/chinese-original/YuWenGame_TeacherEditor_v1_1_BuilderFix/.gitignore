@@ -1,0 +1,5 @@
+_build_cache/*.zip
+_build_cache/*.part
+_build_cache/electron-runtime-*/
+release/
+build_log.txt

@@ -1,0 +1,8 @@
+{
+  "name": "yuwengame-teacher",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YuWenGame offline Chinese-language classroom quiz and teacher question editor",
+  "main": "main.js",
+  "productName": "YuWenGame"
+}

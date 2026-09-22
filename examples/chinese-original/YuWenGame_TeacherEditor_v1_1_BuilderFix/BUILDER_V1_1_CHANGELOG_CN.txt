@@ -1,0 +1,15 @@
+YuWenGame Teacher Editor v1.1 - Builder Fix
+
+本次只修正 Windows 便携版构建器，不改游戏和教师编辑器功能。
+
+修正内容：
+1. BUILD.cmd 不再把 PowerShell 输出全部隐藏到日志文件，下载、校验、解压和打包进度会直接显示。
+2. Electron 下载使用 .part 临时文件，下载完成后立即检查文件大小与 SHA-256。
+3. 某个下载源返回错误文件时，会自动删除并继续尝试下一个下载源。
+4. 已存在的 _build_cache Electron ZIP 会先校验，错误缓存会自动删除。
+5. curl 下载增加进度条、连接超时、总超时和自动重试。
+6. 加入 .gitignore，默认不再把 Electron 大型缓存 ZIP 和 release 成品提交到 Git 仓库。
+
+Electron 43.2.0 Windows x64 官方校验值：
+大小：144326439 bytes
+SHA-256：EBA5F5088AF40ECB364FE258809C79A5234C6ECE5A75C64722772EBA01B02786

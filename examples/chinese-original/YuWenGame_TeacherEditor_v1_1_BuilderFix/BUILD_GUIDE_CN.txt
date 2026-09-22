@@ -1,0 +1,14 @@
+YuWenGame Windows x64 构建说明（v1.1）
+
+1. 请先完整解压整个工程，不要在 ZIP 压缩包内部直接运行。
+2. 双击 BUILD.cmd。
+3. 第一次构建时会下载约 137.6 MB 的 Electron 43.2.0 Windows x64 运行库。新版构建器会实时显示下载进度。
+4. 下载后会自动检查文件大小和 SHA-256；错误文件会自动删除并尝试下一下载源。
+5. 构建成功后会自动打开 release 文件夹。
+6. 最终交付给老师的是 release\YuWenGame_Teacher_Windows_x64 文件夹，或同名 ZIP。
+
+如果网络无法下载，也可以手动把 electron-v43.2.0-win32-x64.zip 放入 _build_cache 后再运行 BUILD.cmd。
+正确大小：144326439 bytes
+正确 SHA-256：EBA5F5088AF40ECB364FE258809C79A5234C6ECE5A75C64722772EBA01B02786
+
+GitHub 建议：不要提交 _build_cache/*.zip 和 release/，项目已附带 .gitignore。

@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "chapters": [
+    {
+      "id": "01_words",
+      "order": 1,
+      "icon": "✒️",
+      "title": "第一关：字词积累",
+      "subtitle": "字音、字形与词语运用",
+      "enabled": true,
+      "file": "data/chapters/01_words/chapter.json"
+    },
+    {
+      "id": "02_classics",
+      "order": 2,
+      "icon": "📜",
+      "title": "第二关：古诗文积累",
+      "subtitle": "名篇名句与文言基础",
+      "enabled": true,
+      "file": "data/chapters/02_classics/chapter.json"
+    },
+    {
+      "id": "03_reading",
+      "order": 3,
+      "icon": "📖",
+      "title": "第三关：阅读与表达",
+      "subtitle": "现代文阅读与语言运用",
+      "enabled": true,
+      "file": "data/chapters/03_reading/chapter.json"
+    }
+  ]
+}

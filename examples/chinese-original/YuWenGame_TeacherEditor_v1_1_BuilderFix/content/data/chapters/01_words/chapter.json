@@ -1,0 +1,70 @@
+{
+  "id": "01_words",
+  "title": "字词积累",
+  "questions": [
+    {
+      "id": "words_001",
+      "type": "single",
+      "text": "下列词语中，书写完全正确的一项是（　）",
+      "options": [
+        {
+          "id": "a",
+          "content": "震耳欲聋"
+        },
+        {
+          "id": "b",
+          "content": "锐不可挡"
+        },
+        {
+          "id": "c",
+          "content": "眼花瞭乱"
+        },
+        {
+          "id": "d",
+          "content": "屏息连声"
+        }
+      ],
+      "answerId": "a",
+      "explanation": "“锐不可挡”应为“锐不可当”；“眼花瞭乱”应为“眼花缭乱”；“屏息连声”应为“屏息敛声”。"
+    },
+    {
+      "id": "words_002",
+      "type": "multiple",
+      "text": "下列词语中，书写正确的有（　）",
+      "options": [
+        {
+          "id": "a",
+          "content": "油光可鉴"
+        },
+        {
+          "id": "b",
+          "content": "抑扬顿挫"
+        },
+        {
+          "id": "c",
+          "content": "诚皇诚恐"
+        },
+        {
+          "id": "d",
+          "content": "藏污纳垢"
+        }
+      ],
+      "answerIds": [
+        "a",
+        "b",
+        "d"
+      ],
+      "explanation": "“诚皇诚恐”应写作“诚惶诚恐”。其余三项书写正确。"
+    },
+    {
+      "id": "words_003",
+      "type": "fill",
+      "text": "请写出“悄然”中“悄”的拼音（带声调或不带声调均可）。",
+      "answers": [
+        "qiǎo",
+        "qiao"
+      ],
+      "explanation": "“悄然”的“悄”读 qiǎo，表示没有声音或声音很低。"
+    }
+  ]
+}

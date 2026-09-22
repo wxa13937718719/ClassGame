@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YuWenGame 语文题库编辑器</title>
+    <link rel="stylesheet" href="editor/editor.css">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <h1>YuWenGame 语文题库编辑器</h1>
+            <p>面向语文老师的离线题库维护工具 · 支持单选、多选和填空题</p>
+        </div>
+        <div class="top-actions">
+            <span id="save-status" class="status saved">已保存</span>
+            <button id="reload-btn" class="ghost" type="button">重新载入</button>
+            <button id="open-game-btn" class="ghost" type="button">打开语文闯关测试</button>
+            <button id="save-btn" class="primary" type="button">保存并发布</button>
+        </div>
+    </header>
+
+    <main class="workspace">
+        <aside class="panel chapters-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>章节</h2>
+                    <small id="chapter-count">0 个章节</small>
+                </div>
+                <button id="add-chapter-btn" class="mini primary" type="button">＋ 添加章节</button>
+            </div>
+            <div id="chapter-list" class="item-list" aria-label="章节列表"></div>
+        </aside>
+
+        <section class="panel questions-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>题目</h2>
+                    <small id="question-count">请选择章节</small>
+                </div>
+                <button id="add-question-btn" class="mini primary" type="button" disabled>＋ 添加题目</button>
+            </div>
+            <div id="question-list" class="item-list" aria-label="题目列表"></div>
+        </section>
+
+        <section class="editor-area">
+            <div id="empty-editor" class="empty-editor">
+                <h2>请选择一个章节或题目</h2>
+                <p>选择章节可编辑章节信息；选择题目可编辑题干、答案和解析。</p>
+            </div>
+
+            <div id="chapter-editor" class="form-card" hidden>
+                <div class="form-title-row">
+                    <div><h2>章节设置</h2></div>
+                    <div class="row-actions">
+                        <button id="chapter-up-btn" class="ghost small" type="button">上移</button>
+                        <button id="chapter-down-btn" class="ghost small" type="button">下移</button>
+                        <button id="delete-chapter-btn" class="danger small" type="button">删除章节</button>
+                    </div>
+                </div>
+                <div class="field-grid two">
+                    <label>目录标题
+                        <input id="chapter-title-input" type="text" placeholder="例如：第三关：阅读与表达">
+                    </label>
+                    <label>章节图标
+                        <input id="chapter-icon-input" type="text" maxlength="8" placeholder="例如：📚">
+                    </label>
+                </div>
+                <label>副标题
+                    <input id="chapter-subtitle-input" type="text" placeholder="例如：现代文阅读与语言运用">
+                </label>
+                <label class="switch-line">
+                    <input id="chapter-enabled-input" type="checkbox">
+                    <span>在游戏目录中启用本章节</span>
+                </label>
+                <p class="drag-tip">提示：左侧章节可按住“☰”拖动调整顺序。</p>
+            </div>
+
+            <div id="question-editor" class="form-card" hidden>
+                <div class="form-title-row">
+                    <div><h2>编辑题目</h2></div>
+                    <div class="row-actions">
+                        <button id="question-up-btn" class="ghost small" type="button">上移</button>
+                        <button id="question-down-btn" class="ghost small" type="button">下移</button>
+                        <button id="duplicate-question-btn" class="ghost small" type="button">复制题目</button>
+                        <button id="delete-question-btn" class="danger small" type="button">删除题目</button>
+                    </div>
+                </div>
+
+                <label class="type-field">题型
+                    <select id="question-type-input">
+                        <option value="single">单项选择题</option>
+                        <option value="multiple">多项选择题</option>
+                        <option value="fill">填空题</option>
+                    </select>
+                </label>
+
+                <label>题干
+                    <textarea id="question-text-input" rows="4" placeholder="请输入题目内容"></textarea>
+                </label>
+
+                <div class="image-line">
+                    <div>
+                        <strong>题干图片</strong>
+                        <span id="question-image-path" class="muted">无</span>
+                    </div>
+                    <div class="row-actions">
+                        <button id="choose-question-image-btn" class="ghost small" type="button">选择图片</button>
+                        <button id="clear-question-image-btn" class="ghost small" type="button">清除图片</button>
+                    </div>
+                </div>
+                <img id="question-image-preview" class="image-preview" alt="题干图片预览" hidden>
+
+                <section id="choice-editor-block">
+                    <div class="options-head">
+                        <div>
+                            <h3>选项与正确答案</h3>
+                            <small id="answer-mode-tip">点击选项左侧圆点设置正确答案。</small>
+                        </div>
+                        <button id="add-option-btn" class="mini primary" type="button">＋ 添加选项</button>
+                    </div>
+                    <div id="options-editor" class="options-editor"></div>
+                </section>
+
+                <section id="fill-editor-block" hidden>
+                    <label>正确答案
+                        <textarea id="fill-answers-input" rows="4" placeholder="每行填写一个可接受答案。例如：\n鹦鹉\n鹦鹉洲"></textarea>
+                    </label>
+                    <div class="helper-text">学生填写内容会去除首尾空格后与这里逐项比对；每行可设置一个可接受答案。</div>
+                </section>
+
+                <label>答案解析
+                    <textarea id="question-explanation-input" rows="6" placeholder="请输入解析。选择题建议不要写“故选A”这类固定字母。"></textarea>
+                </label>
+                <div id="letter-warning" class="warning" hidden>检测到解析中可能包含固定的 A/B/C/D 答案字母。游戏会随机打乱选项，请检查解析。</div>
+
+                <section class="preview-box">
+                    <div class="preview-head">
+                        <h3>学生视图预览</h3>
+                        <span>仅预览当前编辑内容，不显示答案</span>
+                    </div>
+                    <div id="preview-question" class="preview-question"></div>
+                    <div id="preview-options" class="preview-options"></div>
+                </section>
+                <p class="drag-tip">提示：左侧题目以及选择题选项都可按住“☰”拖动调整顺序。</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="message" class="toast" hidden></div>
+
+    <dialog id="chapter-dialog">
+        <form method="dialog" id="chapter-dialog-form">
+            <h2>添加章节</h2>
+            <label>目录标题
+                <input id="new-chapter-title" type="text" required placeholder="例如：第三关：阅读与表达">
+            </label>
+            <label>副标题
+                <input id="new-chapter-subtitle" type="text" placeholder="例如：现代文阅读与语言运用">
+            </label>
+            <label>图标
+                <input id="new-chapter-icon" type="text" value="📖" maxlength="8">
+            </label>
+            <label class="switch-line">
+                <input id="new-chapter-enabled" type="checkbox" checked>
+                <span>创建后立即在游戏中启用</span>
+            </label>
+            <div class="dialog-actions">
+                <button class="ghost" type="button" id="cancel-chapter-dialog">取消</button>
+                <button class="primary" type="submit">创建章节</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="question-dialog">
+        <form method="dialog" id="question-dialog-form">
+            <h2>添加题目</h2>
+            <label>题型
+                <select id="new-question-type">
+                    <option value="single">单项选择题</option>
+                    <option value="multiple">多项选择题</option>
+                    <option value="fill">填空题</option>
+                </select>
+            </label>
+            <div class="dialog-actions">
+                <button class="ghost" type="button" id="cancel-question-dialog">取消</button>
+                <button class="primary" type="submit">创建题目</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="editor/editor.js"></script>
+</body>
+</html>
