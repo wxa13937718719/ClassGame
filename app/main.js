@@ -82,7 +82,8 @@ function loadSubjectConfig(subjectId) {
     const missing = requiredLabels.filter(key => !String(config.labels?.[key] || "").trim());
     if (missing.length) throw new Error(`科目配置缺少标签：${missing.join(", ")}`);
     const assetValues = [config.assets?.background, config.assets?.icon, ...Object.values(config.assets?.audio || {})];
-    if (assetValues.some(value => typeof value !== "string" || !value || value.startsWith("/") || value.split("/").includes(".."))) {
+    if (assetValues.some(value => typeof value !== "string" || !value || value.startsWith("/")
+        || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value) || value.split("/").includes(".."))) {
         throw new Error(`科目配置包含非法资源路径：${subjectId}`);
     }
     return config;
