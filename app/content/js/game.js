@@ -100,7 +100,10 @@
         el["auto-remove-btn"].hidden = !visible;
         if (!visible) return;
         el["auto-remove-btn"].classList.toggle("is-on", state.autoRemoveWrong);
-        el["auto-remove-btn"].textContent = `答对移除：${state.autoRemoveWrong ? "开" : "关"}`;
+        const labels = window.ClassGameConfig?.labels || {};
+        el["auto-remove-btn"].textContent = state.autoRemoveWrong
+            ? (labels.autoRemoveOn || "答对移除：开")
+            : (labels.autoRemoveOff || "答对移除：关");
         el["auto-remove-btn"].setAttribute("aria-pressed", String(state.autoRemoveWrong));
         el["auto-remove-btn"].title = state.autoRemoveWrong
             ? "当前开启：答对后从错题本移除"
@@ -112,7 +115,7 @@
         ClassGameStorage.setRemoveWrongOnCorrect(state.autoRemoveWrong);
         updateAutoRemoveControl();
         if (notifyParent && isEmbedded()) {
-            window.parent.postMessage({ type: "chemgame:set-auto-remove", enabled: state.autoRemoveWrong }, "*");
+            window.parent.postMessage({ type: "classgame:set-auto-remove", enabled: state.autoRemoveWrong }, "*");
         }
     }
 
@@ -124,14 +127,14 @@
         if (state.mode === "chapter") {
             const chapter = window.CLASSGAME_CHAPTERS[state.chapterId];
             el["chapter-title"].textContent = chapter.title;
-            el["mode-label"].textContent = "章节闯关";
+            el["mode-label"].textContent = window.ClassGameConfig?.labels?.chapterMode || "章节闯关";
             document.title = `${chapter.title} - 趣味化学闯关`;
         } else if (state.mode === "wrong") {
-            el["chapter-title"].textContent = "我的错题本";
+            el["chapter-title"].textContent = window.ClassGameConfig?.labels?.wrongBookTitle || "我的错题本";
             el["mode-label"].textContent = "错题专项练习";
             document.title = "错题本 - 趣味化学闯关";
         } else {
-            el["chapter-title"].textContent = "我的收藏夹";
+            el["chapter-title"].textContent = window.ClassGameConfig?.labels?.favoritesTitle || "我的收藏夹";
             el["mode-label"].textContent = "收藏专项练习";
             document.title = "收藏夹 - 趣味化学闯关";
         }
@@ -490,7 +493,7 @@
     }
 
     function backToDirectory() {
-        if (isEmbedded()) window.parent.postMessage({ type: "chemgame:back-menu" }, "*");
+        if (isEmbedded()) window.parent.postMessage({ type: "classgame:back-menu" }, "*");
         else window.location.href = "index.html?view=menu";
     }
 
@@ -498,12 +501,13 @@
         if (!isEmbedded()) return;
         window.addEventListener("message", event => {
             const data = event.data || {};
-            if (data.type === "chemgame:auto-remove-state") setAutoRemoveWrong(data.enabled !== false, false);
+            if (data.type === "classgame:auto-remove-state") setAutoRemoveWrong(data.enabled !== false, false);
         });
-        window.parent.postMessage({ type: "chemgame:request-auto-remove-state" }, "*");
+        window.parent.postMessage({ type: "classgame:request-auto-remove-state" }, "*");
     }
 
     async function init() {
+        await window.ClassGameConfigReady;
         cacheElements();
         getParams();
         state.autoRemoveWrong = ClassGameStorage.isRemoveWrongOnCorrect();

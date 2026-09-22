@@ -87,7 +87,10 @@
         const enabled = ClassGameStorage.isRemoveWrongOnCorrect();
         if (!elements.autoRemoveButton) return;
         elements.autoRemoveButton.classList.toggle("is-on", enabled);
-        elements.autoRemoveButton.textContent = `错题答对自动移除：${enabled ? "开" : "关"}`;
+        const labels = window.ClassGameConfig?.labels || {};
+        elements.autoRemoveButton.textContent = enabled
+            ? (labels.autoRemoveOn || "错题答对自动移除：开")
+            : (labels.autoRemoveOff || "错题答对自动移除：关");
         elements.autoRemoveButton.setAttribute("aria-pressed", String(enabled));
         elements.autoRemoveButton.title = enabled
             ? "当前开启：在错题本答对后会移除该题"
@@ -116,7 +119,7 @@
         elements.utilityList.appendChild(createUtilityCard({
             href: "game.html?mode=wrong",
             icon: "📖",
-            title: "我的错题本",
+            title: window.ClassGameConfig?.labels?.wrongBookTitle || "我的错题本",
             description: autoRemoveEnabled
                 ? "答对后自动移除（可在上方关闭）"
                 : "答对后继续保留（可在上方开启自动移除）",
@@ -127,7 +130,7 @@
         elements.utilityList.appendChild(createUtilityCard({
             href: "game.html?mode=favorite",
             icon: "⭐",
-            title: "我的收藏夹",
+            title: window.ClassGameConfig?.labels?.favoritesTitle || "我的收藏夹",
             description: "集中练习收藏的题目",
             count: ClassGameStorage.getFavorites().length,
             className: "favorite-card"
@@ -162,7 +165,7 @@
     function sendAudioStateToGame() {
         if (!elements.gameFrame?.contentWindow) return;
         elements.gameFrame.contentWindow.postMessage({
-            type: "chemgame:audio-state",
+            type: "classgame:audio-state",
             enabled: ClassGameAudio.isEnabled()
         }, "*");
     }
@@ -170,7 +173,7 @@
     function sendAutoRemoveStateToGame() {
         if (!elements.gameFrame?.contentWindow) return;
         elements.gameFrame.contentWindow.postMessage({
-            type: "chemgame:auto-remove-state",
+            type: "classgame:auto-remove-state",
             enabled: ClassGameStorage.isRemoveWrongOnCorrect()
         }, "*");
     }
@@ -201,34 +204,34 @@
         window.addEventListener("message", event => {
             const data = event.data || {};
 
-            if (data.type === "chemgame:back-menu") {
+            if (data.type === "classgame:back-menu") {
                 closeGame();
                 return;
             }
 
-            if (data.type === "chemgame:request-audio-state") {
+            if (data.type === "classgame:request-audio-state") {
                 sendAudioStateToGame();
                 return;
             }
 
-            if (data.type === "chemgame:toggle-audio") {
+            if (data.type === "classgame:toggle-audio") {
                 ClassGameAudio.toggle();
                 sendAudioStateToGame();
                 return;
             }
 
-            if (data.type === "chemgame:set-audio") {
+            if (data.type === "classgame:set-audio") {
                 ClassGameAudio.setEnabled(data.enabled !== false);
                 sendAudioStateToGame();
                 return;
             }
 
-            if (data.type === "chemgame:request-auto-remove-state") {
+            if (data.type === "classgame:request-auto-remove-state") {
                 sendAutoRemoveStateToGame();
                 return;
             }
 
-            if (data.type === "chemgame:set-auto-remove") {
+            if (data.type === "classgame:set-auto-remove") {
                 ClassGameStorage.setRemoveWrongOnCorrect(data.enabled !== false);
                 updateAutoRemoveButton();
                 sendAutoRemoveStateToGame();
@@ -283,6 +286,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
+        await window.ClassGameConfigReady;
         cacheElements();
 
         // 每次重新打开程序时，默认将声音设为开启

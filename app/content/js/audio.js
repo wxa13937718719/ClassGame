@@ -101,12 +101,12 @@
             stopBgm();
         }
         updateButton();
-        document.dispatchEvent(new CustomEvent("chem-audio-change", { detail: { enabled } }));
+        document.dispatchEvent(new CustomEvent("classgame-audio-change", { detail: { enabled } }));
     }
 
     function setEnabled(value) {
         if (isEmbeddedGame()) {
-            window.parent.postMessage({ type: "chemgame:set-audio", enabled: Boolean(value) }, "*");
+            window.parent.postMessage({ type: "classgame:set-audio", enabled: Boolean(value) }, "*");
             return;
         }
         applyEnabled(value, true);
@@ -114,7 +114,7 @@
 
     function toggle() {
         if (isEmbeddedGame()) {
-            window.parent.postMessage({ type: "chemgame:toggle-audio" }, "*");
+            window.parent.postMessage({ type: "classgame:toggle-audio" }, "*");
             return;
         }
         setEnabled(!enabled);
@@ -150,13 +150,13 @@
 
         window.addEventListener("message", event => {
             const data = event.data || {};
-            if (data.type !== "chemgame:audio-state") return;
+            if (data.type !== "classgame:audio-state") return;
             enabled = data.enabled !== false;
             bgmStarted = enabled;
             updateButton();
         });
 
-        window.parent.postMessage({ type: "chemgame:request-audio-state" }, "*");
+        window.parent.postMessage({ type: "classgame:request-audio-state" }, "*");
     }
 
     function init(options) {

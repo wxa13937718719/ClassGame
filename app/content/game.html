@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>答题闯关</title>
-    <link rel="icon" href="static/images/common/app_icon.ico">
+    <title>ClassGame</title>
+    <link rel="icon" href="">
     <style>
         :root {
-            --blue: #00c6ff;
-            --deep-blue: #0072ff;
+            --subject-primary: #00c6ff;
+            --subject-secondary: #0072ff;
             --green: #2ecc71;
             --red: #e74c3c;
-            --ink: #1a2f44;
+            --subject-ink: #1a2f44;
         }
         * { box-sizing: border-box; }
         body {
@@ -22,10 +22,10 @@
             color: white;
             background:
                 linear-gradient(135deg, rgba(10,25,47,.88), rgba(2,12,27,.73)),
-                url("static/images/common/bg.jpg") center / cover fixed;
+                var(--subject-background-image) center / cover fixed;
         }
         button, a { font: inherit; }
-        button:focus-visible, a:focus-visible { outline: 3px solid #ffd43b; outline-offset: 3px; }
+        button:focus-visible, a:focus-visible { outline: 3px solid var(--subject-accent); outline-offset: 3px; }
 
         .top-actions {
             width: min(760px, 100%);
@@ -109,7 +109,7 @@
         .progress-fill {
             width: 0;
             height: 100%;
-            background: linear-gradient(90deg, var(--blue), var(--deep-blue));
+            background: linear-gradient(90deg, var(--subject-primary), var(--subject-secondary));
             box-shadow: 0 0 16px rgba(0,198,255,.8);
             transition: width .45s cubic-bezier(.4,1.8,.3,1);
         }
@@ -121,7 +121,7 @@
             border: 1px solid rgba(255,255,255,.72);
             border-radius: 22px;
             background: rgba(255,255,255,.91);
-            color: var(--ink);
+            color: var(--subject-ink);
             box-shadow: 0 0 28px rgba(0,210,255,.22), 0 18px 35px rgba(0,0,0,.28);
             backdrop-filter: blur(14px);
             animation: slideIn .4s ease-out;
@@ -163,7 +163,7 @@
             cursor: pointer;
             font-weight: 700;
         }
-        .favorite-btn.is-favorite { background: #ffd43b; color: #513c00; }
+        .favorite-btn.is-favorite { background: var(--subject-accent); color: #513c00; }
 
         .question-text {
             margin-bottom: 20px;
@@ -195,14 +195,14 @@
             transition: transform .1s, border-color .15s, box-shadow .15s;
         }
         .option-btn:hover:not(:disabled) {
-            border-color: var(--blue);
-            border-bottom-color: var(--deep-blue);
+            border-color: var(--subject-primary);
+            border-bottom-color: var(--subject-secondary);
             box-shadow: 0 6px 15px rgba(0,198,255,.19);
         }
         .option-btn:active:not(:disabled) { transform: translateY(3px); border-bottom-width: 3px; }
         .option-btn.selected:not(:disabled) {
-            border-color: var(--deep-blue);
-            border-bottom-color: var(--deep-blue);
+            border-color: var(--subject-secondary);
+            border-bottom-color: var(--subject-secondary);
             background: #edf6ff;
             box-shadow: 0 0 0 3px rgba(0,114,255,.10);
         }
@@ -253,7 +253,7 @@
             border: none;
             border-radius: 999px;
             padding: 12px 23px;
-            background: linear-gradient(90deg, var(--blue), var(--deep-blue));
+            background: linear-gradient(90deg, var(--subject-primary), var(--subject-secondary));
             color: white;
             cursor: pointer;
             font-weight: 800;
@@ -271,7 +271,7 @@
             outline: none;
             background: white;
         }
-        .fill-answer-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,198,255,.12); }
+        .fill-answer-input:focus { border-color: var(--subject-primary); box-shadow: 0 0 0 3px rgba(0,198,255,.12); }
         .fill-answer-input.correct { border-color: var(--green); background: #effaf2; }
         .fill-answer-input.wrong { border-color: var(--red); background: #fff1ef; }
 
@@ -303,7 +303,7 @@
             font-weight: 800;
         }
         .next-btn, .primary-btn {
-            background: linear-gradient(90deg, var(--blue), var(--deep-blue));
+            background: linear-gradient(90deg, var(--subject-primary), var(--subject-secondary));
             color: white;
             box-shadow: 0 6px 17px rgba(0,114,255,.32);
         }
@@ -331,7 +331,7 @@
             border: 1px solid rgba(255,255,255,.78);
             border-radius: 22px;
             background: white;
-            color: var(--ink);
+            color: var(--subject-ink);
             text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,.38);
             animation: pop .35s ease;
@@ -359,19 +359,19 @@
     </style>
 </head>
 <body>
-    <audio id="bgm" loop preload="auto" src="static/audio/bgm.mp3"></audio>
-    <audio id="correct-sound" preload="auto" src="static/audio/correct.mp3"></audio>
-    <audio id="wrong-sound" preload="auto" src="static/audio/wrong.mp3"></audio>
+    <audio id="bgm" loop preload="auto"></audio>
+    <audio id="correct-sound" preload="auto"></audio>
+    <audio id="wrong-sound" preload="auto"></audio>
 
     <nav class="top-actions">
-        <button class="home-btn" id="back-menu-btn" type="button">← 返回目录</button>
+        <button class="home-btn" id="back-menu-btn" type="button" data-config-key="backToMenu">← 返回目录</button>
         <button class="music-btn" id="music-btn" type="button">🎵</button>
     </nav>
 
     <header class="header">
         <div class="title-group">
             <h1 id="chapter-title">题库加载中...</h1>
-            <span class="mode-label" id="mode-label">准备中</span>
+            <span class="mode-label" id="mode-label" data-config-key="chapterMode">章节闯关</span>
         </div>
         <div class="score-board">⭐ <span id="score">0</span></div>
     </header>
@@ -385,7 +385,7 @@
         <div class="card-tools">
             <div></div>
             <div class="question-tools">
-                <button class="auto-remove-btn" id="auto-remove-btn" type="button" hidden>答对移除：开</button>
+                <button class="auto-remove-btn" id="auto-remove-btn" type="button" hidden data-config-key="autoRemoveOn">答对移除：开</button>
                 <button class="favorite-btn" id="favorite-btn" type="button">☆ 收藏本题</button>
             </div>
         </div>
@@ -403,23 +403,24 @@
     </main>
 
     <section class="empty-state" id="empty-state" hidden>
-        <h2 id="empty-title">这里还没有题目</h2>
+            <h2 id="empty-title">这里还没有题目</h2>
         <p id="empty-text"></p>
-        <button class="primary-btn" id="empty-home-btn" type="button">返回目录</button>
+                <button class="primary-btn" id="empty-home-btn" type="button" data-config-key="backToMenu">返回目录</button>
     </section>
 
     <div class="result-modal" id="result-modal" role="dialog" aria-modal="true">
         <div class="result-panel">
-            <h2 id="result-title">🎉 闯关完成！</h2>
+            <h2 id="result-title" data-config-key="resultTitle">🎉 闯关完成！</h2>
             <div class="result-score" id="result-score">0 分</div>
             <p class="result-detail" id="result-detail"></p>
             <div class="result-actions">
-                <button class="primary-btn" id="retry-btn" type="button">再挑战一次</button>
-                <button class="secondary-btn" id="back-home-btn" type="button">返回目录</button>
+                <button class="primary-btn" id="retry-btn" type="button" data-config-key="retryButton">再挑战一次</button>
+                <button class="secondary-btn" id="back-home-btn" type="button" data-config-key="backToMenu">返回目录</button>
             </div>
         </div>
     </div>
 
+    <script src="js/config.js"></script>
     <script src="js/data-loader.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/audio.js"></script>

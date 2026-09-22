@@ -832,6 +832,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
+        await window.ClassGameConfigReady;
         cacheElements();
         if (!window.classGameEditor) {
             alert("编辑器需要从 ClassGameEditor.exe 启动，不能直接双击 editor.html。");

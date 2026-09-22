@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClassGame 题库编辑器</title>
+    <title>ClassGame</title>
     <link rel="stylesheet" href="editor/editor.css">
 </head>
 <body>
     <header class="topbar">
         <div>
-            <h1>ClassGame 题库编辑器</h1>
-            <p>面向老师的离线题库维护工具 · 支持单选、多选和填空题</p>
+            <h1 data-config-key="editorTitle">ClassGame 题库编辑器</h1>
+            <p data-config-key="editorDescription">面向老师的离线题库维护工具 · 支持单选、多选和填空题</p>
         </div>
         <div class="top-actions">
             <span id="save-status" class="status saved">已保存</span>
@@ -189,6 +189,7 @@
         </form>
     </dialog>
 
+    <script src="js/config.js"></script>
     <script src="editor/editor.js"></script>
 </body>
 </html>

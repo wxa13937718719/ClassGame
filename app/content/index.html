@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>趣味化学闯关 - 游戏大厅</title>
-    <link rel="icon" href="static/images/common/app_icon.ico">
+    <title>ClassGame</title>
+    <link rel="icon" href="">
     <style>
         :root {
-            --blue: #00c6ff;
-            --deep-blue: #0072ff;
-            --ink: #19324a;
+            --subject-primary: #00c6ff;
+            --subject-secondary: #0072ff;
+            --subject-ink: #19324a;
             --glass: rgba(255, 255, 255, 0.88);
         }
 
@@ -24,11 +24,11 @@
             overflow-x: hidden;
             background:
                 linear-gradient(135deg, rgba(10, 25, 47, 0.72), rgba(2, 12, 27, 0.56)),
-                url("static/images/common/bg.jpg") center / cover fixed;
+                var(--subject-background-image) center / cover fixed;
         }
 
         button, a { font: inherit; }
-        button:focus-visible, a:focus-visible { outline: 3px solid #ffd43b; outline-offset: 4px; }
+        button:focus-visible, a:focus-visible { outline: 3px solid var(--subject-accent); outline-offset: 4px; }
 
         .bubbles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
         .bubble {
@@ -103,7 +103,7 @@
         @keyframes floatTitle { 50% { transform: translateY(-14px); } }
         .start-btn {
             padding: 18px 48px;
-            border: 3px solid var(--blue);
+            border: 3px solid var(--subject-primary);
             border-radius: 40px;
             background: rgba(0, 114, 255, 0.12);
             color: white;
@@ -152,7 +152,7 @@
             cursor: pointer;
             backdrop-filter: blur(8px);
         }
-        .tool-btn:hover { border-color: var(--blue); background: rgba(0,114,255,.45); }
+        .tool-btn:hover { border-color: var(--subject-primary); background: rgba(0,114,255,.45); }
         .tool-btn.is-on { border-color: #48d17c; background: rgba(25, 135, 84, .76); }
         .tool-btn.danger:hover { border-color: #ff6b6b; background: rgba(192,57,43,.58); }
 
@@ -176,7 +176,7 @@
             border-bottom: 6px solid #b8c2cc;
             border-radius: 20px;
             background: var(--glass);
-            color: var(--ink);
+            color: var(--subject-ink);
             text-decoration: none;
             box-shadow: 0 11px 24px rgba(0,0,0,.24);
             transition: transform .18s, box-shadow .18s, border-color .18s;
@@ -184,8 +184,8 @@
         }
         .active-card:hover, .utility-card:hover {
             transform: translateY(-5px) scale(1.015);
-            border-color: var(--blue);
-            border-bottom-color: var(--deep-blue);
+            border-color: var(--subject-primary);
+            border-bottom-color: var(--subject-secondary);
             box-shadow: 0 15px 30px rgba(0,198,255,.32);
         }
         .level-icon { flex: 0 0 auto; margin-right: 18px; font-size: 42px; }
@@ -193,7 +193,7 @@
         .level-info h3 { margin: 0 0 7px; font-size: 21px; }
         .level-info p { margin: 0 0 7px; color: #506579; line-height: 1.45; }
         .level-info small { color: #718096; }
-        .go-arrow { position: absolute; right: 20px; font-size: 26px; color: var(--deep-blue); }
+        .go-arrow { position: absolute; right: 20px; font-size: 26px; color: var(--subject-secondary); }
         .locked-card { opacity: .72; filter: grayscale(.76); cursor: not-allowed; }
         .wrong-book-card { border-bottom-color: #ee5253; }
         .favorite-card { border-bottom-color: #f3b700; }
@@ -252,8 +252,8 @@
     </style>
 </head>
 <body>
-    <audio id="bgm" loop preload="auto" src="static/audio/bgm.mp3"></audio>
-    <audio id="hover-sound" preload="auto" src="static/audio/hover.mp3"></audio>
+    <audio id="bgm" loop preload="auto"></audio>
+    <audio id="hover-sound" preload="auto"></audio>
 
     <button class="music-btn" id="music-btn" type="button">🎵</button>
 
@@ -263,28 +263,28 @@
     </div>
 
     <section class="splash-screen" id="splash-screen">
-        <h1 class="splash-title">🧪 趣味化学大闯关</h1>
-        <button class="start-btn" id="enter-game-btn" type="button">点击进入系统</button>
+        <h1 class="splash-title" data-config-key="splashTitle">ClassGame</h1>
+        <button class="start-btn" id="enter-game-btn" type="button" data-config-key="enterButton">点击进入系统</button>
     </section>
 
     <main class="container" id="main-menu">
         <header class="menu-header">
-            <h1 class="game-title">化学闯关大厅</h1>
-            <p>选择关卡开始挑战，题目和选项每次都会随机排列</p>
+            <h1 class="game-title" data-config-key="homeTitle">学习大厅</h1>
+            <p data-config-key="homeDescription">选择关卡开始挑战</p>
         </header>
 
         <div class="toolbar">
-            <button class="tool-btn" id="export-btn" type="button">⬇ 导出学习记录</button>
-            <button class="tool-btn" id="import-btn" type="button">⬆ 导入学习记录</button>
+            <button class="tool-btn" id="export-btn" type="button" data-config-key="exportButton">⬇ 导出学习记录</button>
+            <button class="tool-btn" id="import-btn" type="button" data-config-key="importButton">⬆ 导入学习记录</button>
             <button class="tool-btn" id="auto-remove-btn" type="button" aria-pressed="true">错题答对自动移除：开</button>
-            <button class="tool-btn danger" id="reset-btn" type="button">🗑 清空记录</button>
+            <button class="tool-btn danger" id="reset-btn" type="button" data-config-key="resetButton">🗑 清空记录</button>
             <input id="import-file" type="file" accept="application/json,.json" hidden>
         </div>
 
-        <h2 class="section-title">关卡目录</h2>
+        <h2 class="section-title" data-config-key="chapterSectionTitle">关卡目录</h2>
         <section class="menu-list" id="chapter-list"></section>
 
-        <h2 class="section-title">专项练习</h2>
+        <h2 class="section-title" data-config-key="practiceSectionTitle">专项练习</h2>
         <section class="menu-list" id="utility-list"></section>
     </main>
 
@@ -295,9 +295,10 @@
         从目录进入关卡、从关卡返回目录时不会重新开始播放。
     -->
     <section class="game-shell" id="game-shell" hidden>
-        <iframe class="game-frame" id="game-frame" title="化学答题关卡" src="about:blank"></iframe>
+        <iframe class="game-frame" id="game-frame" title="答题关卡" data-config-key="gameFrameTitle" src="about:blank"></iframe>
     </section>
 
+    <script src="js/config.js"></script>
     <script src="js/data-loader.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/audio.js"></script>

@@ -1,8 +1,8 @@
 (function () {
     "use strict";
 
-    const STORAGE_KEY = "chem_game_state_v3";
-    const OLD_STORAGE_KEYS = ["chem_game_state_v2"];
+    const DEFAULT_STORAGE_KEY = "classgame:default";
+    const OLD_STORAGE_KEYS = ["chem_game_state_v3", "chem_game_state_v2", "yuwen_game_state_v3"];
     const VERSION = 3;
     let memoryState = null;
 
@@ -36,7 +36,7 @@
     }
 
     function readRawState() {
-        const current = localStorage.getItem(STORAGE_KEY);
+        const current = localStorage.getItem(storageKey());
         if (current) return JSON.parse(current);
 
         for (const oldKey of OLD_STORAGE_KEYS) {
@@ -51,7 +51,7 @@
             const raw = readRawState();
             if (raw) {
                 memoryState = normalizeState(raw);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryState));
+                localStorage.setItem(storageKey(), JSON.stringify(memoryState));
                 return clone(memoryState);
             }
 
@@ -72,7 +72,7 @@
         const safeState = normalizeState(state);
         memoryState = safeState;
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
+            localStorage.setItem(storageKey(), JSON.stringify(safeState));
         } catch (error) {
             console.warn("写入本地存档失败，本次运行仍可继续。", error);
         }
@@ -81,6 +81,10 @@
 
     function makeRef(chapterId, questionId) {
         return { chapterId, questionId };
+    }
+
+    function storageKey() {
+        return window.ClassGameConfig?.storageKey || DEFAULT_STORAGE_KEY;
     }
 
     function hasRef(list, chapterId, questionId) {
