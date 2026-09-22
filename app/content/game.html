@@ -7,11 +7,13 @@
     <link rel="icon" href="">
     <style>
         :root {
-            --subject-primary: #00c6ff;
-            --subject-secondary: #0072ff;
+            --subject-primary: #3B82F6;
+            --subject-secondary: #1D4ED8;
             --green: #2ecc71;
             --red: #e74c3c;
-            --subject-ink: #1a2f44;
+            --subject-ink: #1F2937;
+            --subject-surface: #FFFFFF;
+            --subject-accent: #F59E0B;
         }
         * { box-sizing: border-box; }
         body {
@@ -120,7 +122,7 @@
             padding: 28px;
             border: 1px solid rgba(255,255,255,.72);
             border-radius: 22px;
-            background: rgba(255,255,255,.91);
+            background: color-mix(in srgb, var(--subject-surface) 91%, transparent);
             color: var(--subject-ink);
             box-shadow: 0 0 28px rgba(0,210,255,.22), 0 18px 35px rgba(0,0,0,.28);
             backdrop-filter: blur(14px);

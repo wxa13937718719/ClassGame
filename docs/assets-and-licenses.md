@@ -12,3 +12,7 @@ those rights.
 When an asset is not cleared, replace it with an owned or permissively licensed
 asset, remove it, or keep the affected subject private. Record attribution and
 the applicable license in the subject documentation when required.
+
+The neutral PNG background and icon under `app/subjects/_template/static/`
+were generated specifically for ClassGame and are covered by the repository's
+MIT license. They may be replaced when creating a subject identity.

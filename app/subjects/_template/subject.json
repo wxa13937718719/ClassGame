@@ -37,14 +37,9 @@
     "accent": "#F59E0B"
   },
   "assets": {
-    "background": "static/images/common/bg.jpg",
-    "icon": "static/images/common/app_icon.ico",
-    "audio": {
-      "bgm": "static/audio/bgm.mp3",
-      "correct": "static/audio/correct.mp3",
-      "wrong": "static/audio/wrong.mp3",
-      "hover": "static/audio/hover.mp3"
-    }
+    "background": "static/images/common/bg.png",
+    "icon": "static/images/common/app_icon.png",
+    "audio": {}
   },
   "storageKey": "classgame:subject-id"
 }

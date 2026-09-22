@@ -24,7 +24,7 @@ function Resolve-SubjectId {
     return "chemistry"
 }
 function Assert-RelativePath([string]$Value, [string]$Field) {
-    if ([string]::IsNullOrWhiteSpace($Value) -or $Value.StartsWith("/") -or $Value.Split("/") -contains "..") { throw "Invalid relative path in ${Field}: $Value" }
+    if ([string]::IsNullOrWhiteSpace($Value) -or $Value.StartsWith("/") -or $Value -match '^[A-Za-z][A-Za-z0-9+.-]*:' -or $Value.Split("/") -contains "..") { throw "Invalid relative path in ${Field}: $Value" }
 }
 function Get-Subject([string]$Id) {
     if ($Id -notmatch '^[A-Za-z0-9_-]+$') { throw "Invalid subject ID: $Id" }
@@ -33,6 +33,8 @@ function Get-Subject([string]$Id) {
     if (-not (Test-Path $configPath)) { throw "Subject not found: $Id" }
     $config = Read-Json $configPath
     if ($config.id -ne $Id) { throw "Subject manifest id does not match its directory: $Id" }
+    foreach ($key in @("productName", "gameTitle", "editorTitle", "appUserModelId")) { if ([string]::IsNullOrWhiteSpace([string]$config.app.$key)) { throw "Subject is missing app.$key" } }
+    if ([string]$config.storageKey -notmatch '^classgame:[A-Za-z0-9_-]+$') { throw "Invalid subject storageKey" }
     $required = @("splashTitle", "enterButton", "homeTitle", "homeDescription", "chapterSectionTitle", "practiceSectionTitle", "chapterMode", "wrongBookTitle", "favoritesTitle")
     foreach ($key in $required) { if ([string]::IsNullOrWhiteSpace([string]$config.labels.$key)) { throw "Subject is missing labels.$key" } }
     foreach ($themeKey in @("primary", "secondary", "ink", "surface", "accent")) { if ([string]$config.theme.$themeKey -notmatch '^#[0-9A-Fa-f]{6}$') { throw "Invalid theme.$themeKey" } }
@@ -58,7 +60,7 @@ function Get-SelectedManifest([string]$Id, $subject) {
     $files = @()
     $shared = Get-ChildItem (Join-Path $ProjectRoot "content") -File -Recurse | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1) }
     $files += $shared
-    $files += "default-subject.json"
+    $files += @("main.js", "preload.js", "package.json", "default-subject.json")
     $subjectFiles = Get-ChildItem $subject.Root -File -Recurse | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1) }
     $files += $subjectFiles
     $files | Sort-Object -Unique | ForEach-Object { "$_" }
@@ -84,6 +86,8 @@ function Acquire-Runtime {
 }
 
 $selectedId = Resolve-SubjectId
+$sharedRequired = @("main.js", "preload.js", "package.json", "default-subject.json", "content\index.html", "content\game.html", "content\editor.html", "content\js\config.js", "content\editor\editor.js")
+foreach ($relative in $sharedRequired) { if (-not (Test-Path (Join-Path $ProjectRoot $relative))) { throw "Missing shared application file: $relative" } }
 $selected = Get-Subject $selectedId
 $manifest = Get-SelectedManifest $selectedId $selected
 Write-Host "Selected subject: $selectedId"

@@ -1,11 +1,11 @@
 :root {
     --bg: #f4f6f8;
-    --panel: #ffffff;
+    --panel: var(--subject-surface, #ffffff);
     --line: #d8dee6;
-    --text: #243342;
+    --text: var(--subject-ink, #243342);
     --muted: #718096;
-    --primary: #1769e0;
-    --primary-dark: #0f55bd;
+    --primary: var(--subject-primary, #1769e0);
+    --primary-dark: var(--subject-secondary, #0f55bd);
     --danger: #c0392b;
     --green: #238636;
     --warn-bg: #fff4d6;

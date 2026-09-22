@@ -6,6 +6,7 @@ $appRoot = Join-Path $repoRoot "app"
 $subjectsRoot = Join-Path $appRoot "subjects"
 $errors = [System.Collections.Generic.List[string]]::new()
 $reports = [System.Collections.Generic.List[string]]::new()
+$storageKeys = @{}
 
 function Add-Error([string]$Message) { $errors.Add($Message) }
 function Read-Json([string]$Path) {
@@ -13,7 +14,11 @@ function Read-Json([string]$Path) {
     catch { Add-Error "Invalid JSON: $Path ($($_.Exception.Message))"; return $null }
 }
 function Assert-Relative([string]$Value, [string]$Field) {
-    if ([string]::IsNullOrWhiteSpace($Value) -or $Value.StartsWith("/") -or $Value.Split("/") -contains "..") { Add-Error "Invalid asset path in ${Field}: $Value" }
+    if ([string]::IsNullOrWhiteSpace($Value) -or $Value.StartsWith("/") -or $Value -match '^[A-Za-z][A-Za-z0-9+.-]*:' -or $Value.Split("/") -contains "..") {
+        Add-Error "Invalid asset path in ${Field}: $Value"
+        return $false
+    }
+    return $true
 }
 function Validate-Subject([string]$Id) {
     $root = Join-Path $subjectsRoot $Id
@@ -23,12 +28,14 @@ function Validate-Subject([string]$Id) {
     if (-not $config) { return }
     if ($config.id -ne $Id -or $Id -notmatch '^[A-Za-z0-9_-]+$') { Add-Error "Subject id mismatch or invalid: $Id" }
     foreach ($key in @("locale", "name", "storageKey")) { if ([string]::IsNullOrWhiteSpace([string]$config.$key)) { Add-Error "Missing ${Id}.${key}" } }
+    if ($config.storageKey -notmatch '^classgame:[A-Za-z0-9_-]+$') { Add-Error "Invalid ${Id}.storageKey" }
+    if ($storageKeys.ContainsKey([string]$config.storageKey)) { Add-Error "Duplicate storageKey for $Id and $($storageKeys[[string]$config.storageKey]): $($config.storageKey)" } else { $storageKeys[[string]$config.storageKey] = $Id }
     foreach ($key in @("productName", "gameTitle", "editorTitle", "appUserModelId")) { if ([string]::IsNullOrWhiteSpace([string]$config.app.$key)) { Add-Error "Missing ${Id}.app.${key}" } }
     foreach ($key in @("splashTitle", "enterButton", "homeTitle", "homeDescription", "chapterSectionTitle", "practiceSectionTitle", "chapterMode", "wrongBookTitle", "favoritesTitle")) { if ([string]::IsNullOrWhiteSpace([string]$config.labels.$key)) { Add-Error "Missing ${Id}.labels.${key}" } }
     foreach ($key in @("primary", "secondary", "ink", "surface", "accent")) { if ([string]$config.theme.$key -notmatch '^#[0-9A-Fa-f]{6}$') { Add-Error "Invalid ${Id}.theme.${key}" } }
-    Assert-Relative $config.assets.background "${Id}.assets.background"
-    Assert-Relative $config.assets.icon "${Id}.assets.icon"
-    foreach ($asset in $config.assets.audio.psobject.Properties) { Assert-Relative $asset.Value "${Id}.assets.audio.$($asset.Name)" }
+    $null = Assert-Relative $config.assets.background "${Id}.assets.background"
+    $null = Assert-Relative $config.assets.icon "${Id}.assets.icon"
+    foreach ($asset in $config.assets.audio.psobject.Properties) { $null = Assert-Relative $asset.Value "${Id}.assets.audio.$($asset.Name)" }
     foreach ($asset in @($config.assets.background, $config.assets.icon) + @($config.assets.audio.psobject.Properties | ForEach-Object Value)) { if (-not (Test-Path (Join-Path $root $asset))) { Add-Error "Missing asset for ${Id}: $asset" } }
     $manifestPath = Join-Path $root "data\manifest.json"
     $manifest = Read-Json $manifestPath
@@ -38,7 +45,7 @@ function Validate-Subject([string]$Id) {
     foreach ($item in @($manifest.chapters)) {
         if (-not $chapterIds.Add([string]$item.id)) { Add-Error "Duplicate chapter id in ${Id}: $($item.id)" }
         if ($item.id -notmatch '^[A-Za-z0-9_-]+$') { Add-Error "Invalid chapter id in ${Id}: $($item.id)" }
-        Assert-Relative $item.file "${Id} chapter $($item.id)"
+        if (-not (Assert-Relative $item.file "${Id} chapter $($item.id)")) { continue }
         $chapterPath = Join-Path $root $item.file
         $chapter = Read-Json $chapterPath
         if (-not $chapter) { continue }
@@ -60,7 +67,7 @@ function Validate-Subject([string]$Id) {
                 if ($question.type -eq "single" -and $optionIds -notcontains $question.answerId) { Add-Error "Invalid single answer in ${Id}: $($question.id)" }
                 if ($question.type -eq "multiple" -and (-not @($question.answerIds).Count -or @($question.answerIds | Where-Object { $optionIds -notcontains $_ }).Count)) { Add-Error "Invalid multiple answer in ${Id}: $($question.id)" }
             }
-            foreach ($image in @($question.image) + @($question.options | ForEach-Object image)) { if ($image) { Assert-Relative $image "${Id} question $($question.id)"; if (-not (Test-Path (Join-Path $root $image))) { Add-Error "Missing question image in ${Id}: $image" } } }
+            foreach ($image in @($question.image) + @($question.options | ForEach-Object image)) { if ($image -and (Assert-Relative $image "${Id} question $($question.id)")) { if (-not (Test-Path (Join-Path $root $image))) { Add-Error "Missing question image in ${Id}: $image" } } }
         }
     }
     $reports.Add("${Id}: chapters=$(@($manifest.chapters).Count); questions=$questionCount")

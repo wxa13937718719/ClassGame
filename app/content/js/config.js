@@ -45,6 +45,13 @@
         return config;
     }
 
+    function deepFreeze(value) {
+        Object.values(value || {}).forEach(child => {
+            if (child && typeof child === "object" && !Object.isFrozen(child)) deepFreeze(child);
+        });
+        return Object.freeze(value);
+    }
+
     function assetUrl(relativePath) {
         const value = assertRelativeAsset(relativePath, "asset");
         const withoutPrefix = value.replace(/^static\//, "");
@@ -87,7 +94,7 @@
         const response = await fetch("/subject.json", { cache: "no-store" });
         if (!response.ok) throw new Error(`无法读取科目配置（HTTP ${response.status}）。`);
         const config = validateConfig(await response.json());
-        const frozen = Object.freeze(JSON.parse(JSON.stringify(config)));
+        const frozen = deepFreeze(JSON.parse(JSON.stringify(config)));
         window.ClassGameConfig = frozen;
         applyTheme(frozen);
         applyLabels(frozen);
