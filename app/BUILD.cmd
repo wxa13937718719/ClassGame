@@ -4,7 +4,7 @@ cd /d "%~dp0"
 chcp 65001 >nul 2>&1
 
 echo ============================================
-echo ClassGame Electron Portable Builder v2.1
+echo ClassGame Electron Portable Builder
 echo ============================================
 echo.
 echo This version shows build and download progress live.
@@ -20,7 +20,11 @@ if not exist "%~dp0tools\build-portable.ps1" (
 
 echo Starting PowerShell builder...
 echo.
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\build-portable.ps1"
+if "%~1"=="" (
+  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\build-portable.ps1"
+) else (
+  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\build-portable.ps1" -SubjectId "%~1"
+)
 set "ERR=%ERRORLEVEL%"
 
 echo.
@@ -30,7 +34,6 @@ if "%ERR%"=="0" (
   echo Output folder: release
   echo ============================================
   echo.
-  if exist "%~dp0release" start "" explorer.exe "%~dp0release"
 ) else (
   echo ============================================
   echo Build failed. Error code: %ERR%

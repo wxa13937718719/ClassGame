@@ -1,218 +1,117 @@
+param(
+    [string]$SubjectId,
+    [switch]$ValidateOnly
+)
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Version = "43.2.0"
 $RuntimeFile = "electron-v$Version-win32-x64.zip"
-$ExpectedSha256 = "EBA5F5088AF40ECB364FE258809C79A5234C6ECE5A75C64722772EBA01B02786"
+$ExpectedSha256 = "EBA5F508AF40ECB364FE258809C79A5234C6ECE5A75C64722772EBA01B02786"
 $ExpectedSize = 144326439
 $CacheDir = Join-Path $ProjectRoot "_build_cache"
 $RuntimeZip = Join-Path $CacheDir $RuntimeFile
 $RuntimePart = "$RuntimeZip.part"
 $ExtractDir = Join-Path $CacheDir "electron-runtime-$Version"
 $ReleaseRoot = Join-Path $ProjectRoot "release"
-$AppFolderName = "ClassGame_Teacher_Windows_x64"
-$AppDir = Join-Path $ReleaseRoot $AppFolderName
-$AppZip = Join-Path $ReleaseRoot "$AppFolderName.zip"
 
-function Write-Step([string]$Text) {
-    Write-Host "`n==> $Text" -ForegroundColor Cyan
+function Read-Json([string]$Path) { Get-Content -Raw -Encoding UTF8 -LiteralPath $Path | ConvertFrom-Json }
+function Resolve-SubjectId {
+    if ($SubjectId) { return $SubjectId }
+    $defaultPath = Join-Path $ProjectRoot "default-subject.json"
+    if (Test-Path $defaultPath) { return (Read-Json $defaultPath).subjectId }
+    return "chemistry"
 }
-
+function Assert-RelativePath([string]$Value, [string]$Field) {
+    if ([string]::IsNullOrWhiteSpace($Value) -or $Value.StartsWith("/") -or $Value.Split("/") -contains "..") { throw "Invalid relative path in ${Field}: $Value" }
+}
+function Get-Subject([string]$Id) {
+    if ($Id -notmatch '^[A-Za-z0-9_-]+$') { throw "Invalid subject ID: $Id" }
+    $root = Join-Path $ProjectRoot "subjects\$Id"
+    $configPath = Join-Path $root "subject.json"
+    if (-not (Test-Path $configPath)) { throw "Subject not found: $Id" }
+    $config = Read-Json $configPath
+    if ($config.id -ne $Id) { throw "Subject manifest id does not match its directory: $Id" }
+    $required = @("splashTitle", "enterButton", "homeTitle", "homeDescription", "chapterSectionTitle", "practiceSectionTitle", "chapterMode", "wrongBookTitle", "favoritesTitle")
+    foreach ($key in $required) { if ([string]::IsNullOrWhiteSpace([string]$config.labels.$key)) { throw "Subject is missing labels.$key" } }
+    foreach ($themeKey in @("primary", "secondary", "ink", "surface", "accent")) { if ([string]$config.theme.$themeKey -notmatch '^#[0-9A-Fa-f]{6}$') { throw "Invalid theme.$themeKey" } }
+    Assert-RelativePath $config.assets.background "assets.background"
+    Assert-RelativePath $config.assets.icon "assets.icon"
+    foreach ($asset in $config.assets.audio.psobject.Properties) { Assert-RelativePath $asset.Value "assets.audio.$($asset.Name)" }
+    $manifestPath = Join-Path $root "data\manifest.json"
+    if (-not (Test-Path $manifestPath)) { throw "Subject is missing data/manifest.json" }
+    $manifest = Read-Json $manifestPath
+    if (-not $manifest.chapters) { throw "Subject manifest has no chapters" }
+    foreach ($item in $manifest.chapters) {
+        if ($item.id -notmatch '^[A-Za-z0-9_-]+$') { throw "Invalid chapter ID: $($item.id)" }
+        $chapterPath = Join-Path $root $item.file
+        if (-not (Test-Path $chapterPath)) { throw "Missing chapter file: $($item.file)" }
+        $chapter = Read-Json $chapterPath
+        if ($chapter.id -ne $item.id) { throw "Chapter id mismatch: $($item.id)" }
+        if ($null -eq $chapter.questions) { throw "Chapter has no questions array: $($item.id)" }
+    }
+    return @{ Root = $root; Config = $config; Manifest = $manifest }
+}
+function Get-SelectedManifest([string]$Id, $subject) {
+    $files = @()
+    $shared = Get-ChildItem (Join-Path $ProjectRoot "content") -File -Recurse | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1) }
+    $files += $shared
+    $files += "default-subject.json"
+    $subjectFiles = Get-ChildItem $subject.Root -File -Recurse | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1) }
+    $files += $subjectFiles
+    $files | Sort-Object -Unique | ForEach-Object { "$_" }
+}
 function Test-RuntimeZip([string]$Path) {
     if (-not (Test-Path $Path)) { return $false }
-    try {
-        $Size = (Get-Item $Path).Length
-        Write-Host "Downloaded size: $Size bytes"
-        if ($Size -ne $ExpectedSize) {
-            Write-Warning "File size is not the official size ($ExpectedSize bytes)."
-            return $false
-        }
-        $Hash = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToUpperInvariant()
-        Write-Host "SHA-256: $Hash"
-        return ($Hash -eq $ExpectedSha256)
-    } catch {
-        Write-Warning $_.Exception.Message
-        return $false
-    }
+    return ((Get-Item $Path).Length -eq $ExpectedSize -and (Get-FileHash $Path -Algorithm SHA256).Hash.ToUpperInvariant() -eq $ExpectedSha256)
 }
-
-function Download-WithCurl([string]$Url, [string]$Destination) {
-    Write-Host "Source: $Url" -ForegroundColor Yellow
-    Remove-Item -Force -ErrorAction SilentlyContinue $Destination
-    & curl.exe -L --fail --progress-bar --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 600 -o $Destination $Url
-    return ($LASTEXITCODE -eq 0 -and (Test-Path $Destination))
-}
-
-function Download-WithIwr([string]$Url, [string]$Destination) {
-    Write-Host "Source: $Url" -ForegroundColor Yellow
-    Remove-Item -Force -ErrorAction SilentlyContinue $Destination
-    try {
-        Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing -TimeoutSec 180
-        return (Test-Path $Destination)
-    } catch {
-        Write-Warning $_.Exception.Message
-        return $false
-    }
-}
-
 function Acquire-Runtime {
-    if (Test-Path $RuntimeZip) {
-        Write-Host "Found cached runtime: $RuntimeZip"
-        if (Test-RuntimeZip $RuntimeZip) {
-            Write-Host "Cached runtime is valid." -ForegroundColor Green
-            return
-        }
-        Write-Warning "Cached runtime is invalid and will be removed."
-        Remove-Item -Force -ErrorAction SilentlyContinue $RuntimeZip
-    }
-
-    Write-Step "Downloading Electron $Version Windows x64 runtime (~137.6 MB)"
-    Write-Host "A progress bar should appear below. Download time depends on your network."
-
-    $Urls = @(
+    if (Test-RuntimeZip $RuntimeZip) { return }
+    New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
+    $urls = @(
         "https://npmmirror.com/mirrors/electron/$Version/$RuntimeFile",
         "https://github.com/electron/electron/releases/download/v$Version/$RuntimeFile",
         "https://mirrors.huaweicloud.com/electron/$Version/$RuntimeFile"
     )
-
-    $HasCurl = [bool](Get-Command curl.exe -ErrorAction SilentlyContinue)
-    foreach ($Url in $Urls) {
-        Write-Host "`nTrying download source..." -ForegroundColor Cyan
-        $Ok = if ($HasCurl) { Download-WithCurl $Url $RuntimePart } else { Download-WithIwr $Url $RuntimePart }
-        if (-not $Ok) {
-            Write-Warning "Download failed from this source; trying the next source."
-            continue
-        }
-
-        Write-Host "Verifying downloaded file..."
-        if (Test-RuntimeZip $RuntimePart) {
-            Move-Item -Force $RuntimePart $RuntimeZip
-            Write-Host "Electron runtime downloaded and verified successfully." -ForegroundColor Green
-            return
-        }
-
-        Write-Warning "Downloaded file did not match the official Electron runtime. Trying the next source."
+    foreach ($url in $urls) {
         Remove-Item -Force -ErrorAction SilentlyContinue $RuntimePart
+        try { Invoke-WebRequest -Uri $url -OutFile $RuntimePart -UseBasicParsing -TimeoutSec 600 } catch { continue }
+        if (Test-RuntimeZip $RuntimePart) { Move-Item -Force $RuntimePart $RuntimeZip; return }
     }
-
-    throw "Could not download a valid Electron runtime. You can manually download $RuntimeFile and put it in _build_cache, then run BUILD.cmd again."
+    throw "Could not download a valid Electron $Version runtime."
 }
 
-Write-Step "Checking project files"
-$Required = @(
-    "main.js", "preload.js", "package.json",
-    "content\index.html", "content\game.html", "content\editor.html",
-    "content\data\manifest.json",
-    "content\data\chapters\01_intro\chapter.json",
-    "content\data\chapters\02_change\chapter.json",
-    "content\js\data-loader.js", "content\js\app.js", "content\js\game.js",
-    "content\js\storage.js", "content\js\audio.js", "content\js\effects.js", "content\js\validator.js",
-    "content\editor\editor.js", "content\editor\editor.css"
-)
-foreach ($Relative in $Required) {
-    if (-not (Test-Path (Join-Path $ProjectRoot $Relative))) { throw "Missing project file: $Relative" }
-}
-Write-Host "Project files OK." -ForegroundColor Green
-
-New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
-New-Item -ItemType Directory -Force -Path $ReleaseRoot | Out-Null
-Remove-Item -Force -ErrorAction SilentlyContinue $RuntimePart
+$selectedId = Resolve-SubjectId
+$selected = Get-Subject $selectedId
+$manifest = Get-SelectedManifest $selectedId $selected
+Write-Host "Selected subject: $selectedId"
+Write-Host "Selected files ($($manifest.Count)):`n$($manifest -join "`n")"
+if ($ValidateOnly) { exit 0 }
 
 Acquire-Runtime
-
-Write-Step "Final Electron runtime verification"
-if (-not (Test-RuntimeZip $RuntimeZip)) {
-    Remove-Item -Force -ErrorAction SilentlyContinue $RuntimeZip
-    throw "Electron runtime verification failed."
-}
-Write-Host "SHA-256 OK." -ForegroundColor Green
-
-Write-Step "Extracting Electron runtime"
-Write-Host "This can take a minute or two."
-if (Test-Path $ExtractDir) { Remove-Item -Recurse -Force $ExtractDir }
-New-Item -ItemType Directory -Force -Path $ExtractDir | Out-Null
-Expand-Archive -Path $RuntimeZip -DestinationPath $ExtractDir -Force
-if (-not (Test-Path (Join-Path $ExtractDir "electron.exe"))) { throw "electron.exe not found after extraction." }
-Write-Host "Runtime extraction complete." -ForegroundColor Green
-
-Write-Step "Assembling shared game + editor portable folder"
-if (Test-Path $AppDir) { Remove-Item -Recurse -Force $AppDir }
-New-Item -ItemType Directory -Force -Path $AppDir | Out-Null
-Copy-Item -Path (Join-Path $ExtractDir "*") -Destination $AppDir -Recurse -Force
-
-$ResourcesDir = Join-Path $AppDir "resources"
-$DefaultAsar = Join-Path $ResourcesDir "default_app.asar"
-if (Test-Path $DefaultAsar) { Remove-Item -Force $DefaultAsar }
-$ResourcesApp = Join-Path $ResourcesDir "app"
-if (Test-Path $ResourcesApp) { Remove-Item -Recurse -Force $ResourcesApp }
-New-Item -ItemType Directory -Force -Path $ResourcesApp | Out-Null
-Copy-Item (Join-Path $ProjectRoot "main.js") $ResourcesApp -Force
-Copy-Item (Join-Path $ProjectRoot "preload.js") $ResourcesApp -Force
-Copy-Item (Join-Path $ProjectRoot "package.json") $ResourcesApp -Force
-
-Copy-Item (Join-Path $ProjectRoot "content") (Join-Path $AppDir "content") -Recurse -Force
-New-Item -ItemType Directory -Force -Path (Join-Path $AppDir "userdata") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $AppDir "editor_userdata") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $AppDir "backups") | Out-Null
-Set-Content -Path (Join-Path $AppDir "userdata\DO_NOT_DELETE.txt") -Encoding UTF8 -Value "ClassGame learning records are stored in this folder."
-Set-Content -Path (Join-Path $AppDir "backups\README.txt") -Encoding UTF8 -Value "ClassGameEditor automatically keeps up to 20 question-bank backups here."
-
-$ElectronExe = Join-Path $AppDir "electron.exe"
-$GameExe = Join-Path $AppDir "ClassGame.exe"
-$EditorExe = Join-Path $AppDir "ClassGameEditor.exe"
-Rename-Item -Path $ElectronExe -NewName "ClassGame.exe"
-
-$LauncherCode = @"
-using System;
-using System.Diagnostics;
-using System.IO;
-public static class ClassGameEditorLauncher {
-    [STAThread]
-    public static void Main() {
-        string root = AppDomain.CurrentDomain.BaseDirectory;
-        string exe = Path.Combine(root, "ClassGame.exe");
-        var psi = new ProcessStartInfo();
-        psi.FileName = exe;
-        psi.Arguments = "--editor";
-        psi.WorkingDirectory = root;
-        psi.UseShellExecute = true;
-        Process.Start(psi);
-    }
-}
-"@
-try {
-    Add-Type -TypeDefinition $LauncherCode -OutputAssembly $EditorExe -OutputType WindowsApplication
-} catch {
-    Write-Warning "Could not compile the tiny editor launcher; falling back to a second Electron executable copy."
-    Copy-Item $GameExe $EditorExe -Force
-}
-
-$ReadmeSource = Join-Path $ProjectRoot "TEACHER_README_CN.txt"
-if (Test-Path $ReadmeSource) { Copy-Item $ReadmeSource (Join-Path $AppDir "README_CN.txt") -Force }
-
-$BuildInfo = @"
-ClassGame Teacher Portable Edition
-Build time: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-Electron: $Version
-Platform: Windows x64
-
-Game: ClassGame.exe
-Editor: ClassGameEditor.exe
-Question data: content\data\manifest.json + content\data\chapters
-Learning records: userdata
-Editor backups: backups
-"@
-Set-Content -Path (Join-Path $AppDir "BUILD_INFO.txt") -Encoding UTF8 -Value $BuildInfo
-Write-Host "Portable folder assembled." -ForegroundColor Green
-
-Write-Step "Creating final ZIP"
-Write-Host "Compressing the Electron runtime can take several minutes. Please wait until 'Done' appears."
-if (Test-Path $AppZip) { Remove-Item -Force $AppZip }
-Compress-Archive -Path $AppDir -DestinationPath $AppZip -CompressionLevel Optimal
-
-Write-Step "Done"
-Write-Host "Portable folder: $AppDir" -ForegroundColor Green
-Write-Host "Game EXE: $GameExe" -ForegroundColor Green
-Write-Host "Editor EXE: $EditorExe" -ForegroundColor Green
-Write-Host "Final ZIP: $AppZip" -ForegroundColor Green
+if (-not (Test-RuntimeZip $RuntimeZip)) { throw "Electron runtime verification failed." }
+$appFolderName = "ClassGame_${selectedId}_Teacher_Windows_x64"
+$appDir = Join-Path $ReleaseRoot $appFolderName
+$appZip = Join-Path $ReleaseRoot "$appFolderName.zip"
+if (Test-Path $appDir) { Remove-Item -Recurse -Force $appDir }
+New-Item -ItemType Directory -Force -Path $appDir, $ReleaseRoot | Out-Null
+$extractTemp = Join-Path $CacheDir "electron-runtime-$Version"
+if (Test-Path $extractTemp) { Remove-Item -Recurse -Force $extractTemp }
+New-Item -ItemType Directory -Force -Path $extractTemp | Out-Null
+Expand-Archive -Path $RuntimeZip -DestinationPath $extractTemp -Force
+Copy-Item (Join-Path $extractTemp "*") $appDir -Recurse -Force
+$resourcesApp = Join-Path $appDir "resources\app"
+New-Item -ItemType Directory -Force -Path $resourcesApp | Out-Null
+Copy-Item (Join-Path $ProjectRoot "main.js"), (Join-Path $ProjectRoot "preload.js"), (Join-Path $ProjectRoot "package.json"), (Join-Path $ProjectRoot "default-subject.json") $resourcesApp -Force
+Copy-Item (Join-Path $ProjectRoot "default-subject.json") $appDir -Force
+Copy-Item (Join-Path $ProjectRoot "content") (Join-Path $appDir "content") -Recurse -Force
+Copy-Item $selected.Root (Join-Path $appDir "subjects\$selectedId") -Recurse -Force
+New-Item -ItemType Directory -Force -Path (Join-Path $appDir "userdata"), (Join-Path $appDir "editor_userdata"), (Join-Path $appDir "backups") | Out-Null
+Rename-Item (Join-Path $appDir "electron.exe") "ClassGame.exe"
+Copy-Item (Join-Path $appDir "ClassGame.exe") (Join-Path $appDir "ClassGameEditor.exe") -Force
+@("ClassGame portable release", "Subject: $selectedId", "Electron: $Version", "Game: ClassGame.exe", "Editor: ClassGameEditor.exe") | Set-Content -Encoding UTF8 (Join-Path $appDir "BUILD_INFO.txt")
+if (Test-Path $appZip) { Remove-Item -Force $appZip }
+Compress-Archive -Path $appDir -DestinationPath $appZip -CompressionLevel Optimal
+Write-Host "Portable release: $appDir"
+Write-Host "Archive: $appZip"
